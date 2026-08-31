@@ -512,8 +512,10 @@
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
           </button>
         </div>
-        <div class="empty">Пока ты один.<br>Какашечка любит компанию — позови друзей, и каждый поднимет твой тап.</div>
-        <p class="note">Стая оживёт после привязки бота: реальные рефералы, лидерборд и награда за друга.</p>
+        <div class="empty" id="squadEmpty">Пока ты один.<br>Какашечка любит компанию — позови друзей, и каждый поднимет твой тап.</div>
+        <div class="scr-title" style="padding-top:8px">Неделя</div>
+        <div id="boardList" class="scr-sub">Лидерборд — после входа из Telegram.</div>
+        <p class="note">Рефка: друг должен открыть игру по твоей ссылке и тапнуть. Канал: @kakashechka_game</p>
         <button class="stars-stub" id="starsBtn">Бусты за <b>Telegram Stars</b> — скоро</button>
       </div>
     </section>
@@ -604,6 +606,8 @@
   var tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
   if (tg) { try { tg.ready(); tg.expand(); tg.setHeaderColor('#171009'); tg.setBackgroundColor('#171009'); } catch(e){} }
   var tgUser = tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? tg.initDataUnsafe.user : null;
+  var startParam = (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) ? tg.initDataUnsafe.start_param : '';
+  var API = 'https://webcast-turtle-careers-delayed.trycloudflare.com';
   $('#userName').textContent = tgUser ? (tgUser.first_name || 'Игрок') : 'Демо';
   $('.ava').textContent = tgUser ? ((tgUser.first_name || 'И')[0].toUpperCase()) : 'Д';
 
@@ -704,6 +708,8 @@
     $('#upList').innerHTML = html;
     $('#friendsN').textContent = S.friends;
     $('#refLink').textContent = refLink();
+    var emp = $('#squadEmpty');
+    if (emp) emp.style.display = S.friends > 0 ? 'none' : '';
   }
   function bumpCoins(){
     coinsBox.classList.remove('bump'); void coinsBox.offsetWidth; coinsBox.classList.add('bump');
@@ -839,7 +845,7 @@
   /* ---------- pack ---------- */
   function refLink(){
     var uid = tgUser ? tgUser.id : 'demo';
-    return 't.me/Dimas_podpivas_bot?startapp=ref_' + uid;
+    return 't.me/kakashechka_dm_bot?startapp=ref_' + uid;
   }
   $('#inviteBtn').addEventListener('click', function(){
     var url = 'https://' + refLink();
@@ -890,7 +896,42 @@
   document.addEventListener('visibilitychange', function(){ if (document.hidden) save(); });
   window.addEventListener('pagehide', save);
 
-  function save(){ try { S.lastSeen = Date.now(); localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){} }
+  function saveLocal(){ try { S.lastSeen = Date.now(); localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){} }
+  var syncing = false;
+  function drawBoard(rows){
+    var el = $('#boardList'); if (!el) return;
+    if (!rows || !rows.length) { el.textContent = 'Пока пусто — зайди из Telegram.'; return; }
+    el.innerHTML = rows.map(function(r, i){ return (i+1) + '. ' + (r.name || '?') + ' — ' + fmt(r.coins); }).join('<br>');
+  }
+  function applyRemote(st){
+    if (!st) return;
+    ['coins','tapL','enL','autoL','energy','taps','muted','sinceOpen','nextOpen','friends'].forEach(function(k){
+      if (st[k] !== undefined) S[k] = st[k];
+    });
+    render();
+  }
+  function serverSync(){
+    if (!tg || !tg.initData || !API || API.indexOf('invalid') !== -1) return;
+    if (syncing) return;
+    syncing = true;
+    var payload = {
+      initData: tg.initData,
+      startParam: startParam,
+      state: { coins:S.coins, tapL:S.tapL, enL:S.enL, autoL:S.autoL, energy:S.energy, taps:S.taps, muted:S.muted, sinceOpen:S.sinceOpen, nextOpen:S.nextOpen }
+    };
+    fetch(API + '/sync', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) })
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        if (!j || !j.ok) return;
+        applyRemote(j.state);
+        if (j.dailyGranted) toast('Дневная какашка +' + j.dailyGranted);
+        drawBoard(j.board);
+        saveLocal();
+      })
+      .catch(function(){})
+      .then(function(){ syncing = false; });
+  }
+  function save(){ saveLocal(); serverSync(); }
 
   /* offline energy */
   (function(){
@@ -909,7 +950,7 @@
     return r;
   };
 
-  drawSnd(); render();
+  drawSnd(); render(); serverSync();
 })();
 </script>
 </body>
