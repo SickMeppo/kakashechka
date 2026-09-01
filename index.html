@@ -292,6 +292,34 @@
   .tab svg{ width:22px; height:22px; }
   .tab.on{ color:var(--gold); }
   .tab:active{ transform:scale(.95); }
+  .tab{ font-size:9.5px; }
+
+  .qrow{
+    display:flex; align-items:center; gap:12px; padding:12px 16px;
+    border-top:1px solid var(--border);
+  }
+  .qrow .t{ font-weight:800; font-size:14px; }
+  .qrow .d{ font-size:12px; color:var(--muted); margin-top:2px; }
+  .qrow .claim{
+    flex:none; border:none; cursor:pointer; border-radius:11px; padding:10px 12px;
+    font-family:'Unbounded'; font-weight:700; font-size:11px; color:var(--goldink);
+    background:linear-gradient(180deg,var(--gold2),var(--gold));
+  }
+  .qrow .claim:disabled{ background:var(--surface2); color:var(--muted); }
+  .skingrid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:8px 16px 18px; }
+  .skin{
+    min-height:72px; border:1px solid var(--border); background:var(--surface); color:var(--ink);
+    border-radius:14px; cursor:pointer; padding:12px 10px; text-align:left; font-weight:800; font-size:13px;
+  }
+  .skin small{ display:block; font-weight:600; color:var(--muted); margin-top:4px; font-size:11px; }
+  .skin.on{ border-color:var(--gold); color:var(--gold); }
+  .skin:disabled{ opacity:.45; cursor:default; }
+  #poop.skin-gold{ filter:drop-shadow(0 10px 22px rgba(0,0,0,.5)) sepia(.55) saturate(1.7) hue-rotate(8deg); }
+  #poop.skin-spicy{ filter:drop-shadow(0 10px 22px rgba(0,0,0,.5)) hue-rotate(-18deg) saturate(1.45); }
+  #poop.skin-sleepy{ filter:drop-shadow(0 10px 22px rgba(0,0,0,.5)) grayscale(.35) brightness(.85); }
+  #poop.skin-fly{ filter:drop-shadow(0 10px 22px rgba(0,0,0,.5)) hue-rotate(70deg) saturate(1.1); }
+  .streak{ margin:8px 16px; padding:10px 14px; border-radius:13px; background:var(--surface); border:1px solid var(--border); font-size:13px; color:var(--muted); }
+  .streak b{ color:var(--gold); }
 
   /* ---------- poop grown overlay ---------- */
   #openOverlay{
@@ -499,6 +527,19 @@
       </div>
     </section>
 
+    <!-- ДЕЛО -->
+    <section class="screen" id="scr-job">
+      <div class="scr-pad">
+        <div class="scr-title">Дело</div>
+        <div class="streak">Стрик <b id="streakN">0</b> дн. · заход сегодня даёт какоины</div>
+        <div class="scr-sub">Задания сбрасываются в полночь UTC.</div>
+        <div id="questList"></div>
+        <div class="scr-title">Коллекция</div>
+        <div class="scr-sub">Открыл — носи. Это не магазин Stars.</div>
+        <div class="skingrid" id="skinGrid"></div>
+      </div>
+    </section>
+
     <!-- СТАЯ -->
     <section class="screen" id="scr-team">
       <div class="scr-pad">
@@ -531,6 +572,10 @@
     <button class="tab" data-scr="scr-up" aria-label="Прокачка">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="13 2 3 14 11 14 9 22 19 10 12 10 13 2"/></svg>
       ПРОКАЧКА
+    </button>
+    <button class="tab" data-scr="scr-job" aria-label="Дело">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      ДЕЛО
     </button>
     <button class="tab" data-scr="scr-team" aria-label="Стая">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="14" rx="5" ry="4"/><circle cx="17.5" cy="9.5" r="2"/><path d="M17 5.5l1.2-1-.3 2.2.8.8-1.6.4"/><path d="M7 4.5Q5 6.5 7 8.5"/><path d="M10 3.5Q7.5 6 10 8.5"/></svg>
@@ -613,7 +658,7 @@
 
   /* ---------- state ---------- */
   var KEY = 'poop_clicker_v1';
-  var DEF = { coins:0, tapL:0, enL:0, autoL:0, energy:100, muted:false, taps:0, sinceOpen:0, nextOpen: 20 + Math.floor(Math.random()*16), lastSeen: Date.now(), friends:0 };
+  var DEF = { coins:0, tapL:0, enL:0, autoL:0, critL:0, regenL:0, energy:100, muted:false, taps:0, sinceOpen:0, nextOpen: 20 + Math.floor(Math.random()*16), lastSeen: Date.now(), friends:0, goldOpens:0, skin:'basic', skins:['basic'], qDay:'', qTap:0, qBuy:0, qOpen:0, qCombo:0, qClaim:{}, streak:0, streakDay:'' };
   var S;
   try { S = Object.assign({}, DEF, JSON.parse(localStorage.getItem(KEY) || '{}')); }
   catch(e){ S = Object.assign({}, DEF); }
@@ -622,11 +667,21 @@
   function perTap(){ return (2 + S.tapL) * (1 + 0.25 * S.friends); }
   function maxEnergy(){ return 100 + 20 * S.enL; }
   function autoPerSec(){ return S.autoL; }
+  function regenMs(){ return Math.max(700, 1500 - 80 * (S.regenL || 0)); }
+  function todayUTC(){ return new Date().toISOString().slice(0,10); }
+  function ensureQuests(){
+    var d = todayUTC();
+    if (S.qDay !== d){ S.qDay = d; S.qTap=0; S.qBuy=0; S.qOpen=0; S.qCombo=0; S.qClaim={}; }
+    if (!S.qClaim || typeof S.qClaim !== 'object') S.qClaim = {};
+    if (!S.skins || !S.skins.length) S.skins = ['basic'];
+  }
 
   var UPS = [
     { k:'tapL', cap:100, name:'Фастфуд',       icon:'food', cost:function(l){ return Math.floor(25 * Math.pow(1.6, l)); },  d:function(l){ return '+1 какоин за тап · сейчас <b>' + perTap() + '</b>'; } },
     { k:'enL', cap:50,  name:'Кишечник',      icon:'gut',  cost:function(l){ return Math.floor(50 * Math.pow(1.7, l)); },  d:function(l){ return '+20 к энергии · сейчас <b>' + maxEnergy() + '</b>'; } },
-    { k:'autoL',cap:15, name:'Муха-помощник', icon:'fly',  cost:function(l){ return Math.floor(200 * Math.pow(2, l)); },  d:function(l){ return 'Тапает сама · сейчас <b>' + autoPerSec() + '/сек</b>'; } }
+    { k:'autoL',cap:15, name:'Муха-помощник', icon:'fly',  cost:function(l){ return Math.floor(200 * Math.pow(2, l)); },  d:function(l){ return 'Тапает сама · сейчас <b>' + autoPerSec() + '/сек</b>'; } },
+    { k:'critL', cap:20, name:'Острое',        icon:'food', cost:function(l){ return Math.floor(80 * Math.pow(1.75, l)); }, d:function(l){ return 'шанс крита ×3 · сейчас <b>' + Math.round((0.05*S.critL)*100) + '%</b>'; } },
+    { k:'regenL',cap:10, name:'Кофе',          icon:'gut',  cost:function(l){ return Math.floor(60 * Math.pow(1.8, l)); },  d:function(l){ return 'энергия быстрее · тик <b>' + regenMs() + 'мс</b>'; } }
   ];
   var ICONS = {
     food:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 3v8a3 3 0 0 0 6 0V3"/><path d="M9 11v10"/><path d="M17 3c-1.5 2-2 4-2 6s.5 3 2 3 2-1 2-3-.5-4-2-6z"/><path d="M17 12v9"/></svg>',
@@ -710,6 +765,57 @@
     $('#refLink').textContent = refLink();
     var emp = $('#squadEmpty');
     if (emp) emp.style.display = S.friends > 0 ? 'none' : '';
+    renderJobs();
+    applySkinClass();
+  }
+  var QUESTS = [
+    { id:'tap', name:'Тапни 50 раз', need:50, key:'qTap', rew:80 },
+    { id:'buy', name:'Купи улучшение', need:1, key:'qBuy', rew:50 },
+    { id:'open', name:'Открой какашку', need:1, key:'qOpen', rew:120 },
+    { id:'combo', name:'Серия 10 тапов', need:1, key:'qCombo', rew:60 }
+  ];
+  var SKINS = [
+    { id:'basic', name:'Обычная', how:'сразу', ok:function(){ return true; } },
+    { id:'gold', name:'Золотая', how:'1 золотая', ok:function(){ return (S.goldOpens||0) >= 1; } },
+    { id:'spicy', name:'Острая', how:'Фастфуд ур.3', ok:function(){ return S.tapL >= 3; } },
+    { id:'sleepy', name:'Сонная', how:'100 тапов', ok:function(){ return S.taps >= 100; } },
+    { id:'fly', name:'Мушиная', how:'муха ур.1', ok:function(){ return S.autoL >= 1; } }
+  ];
+  function unlockSkins(){
+    SKINS.forEach(function(sk){
+      if (sk.ok() && S.skins.indexOf(sk.id) < 0) S.skins.push(sk.id);
+    });
+  }
+  function applySkinClass(){
+    if (!poop) return;
+    poop.classList.remove('skin-gold','skin-spicy','skin-sleepy','skin-fly');
+    if (S.skin && S.skin !== 'basic') poop.classList.add('skin-'+S.skin);
+  }
+  function renderJobs(){
+    ensureQuests();
+    unlockSkins();
+    var sn = $('#streakN'); if (sn) sn.textContent = S.streak || 0;
+    var ql = $('#questList');
+    if (ql){
+      var h = '';
+      for (var i=0;i<QUESTS.length;i++){
+        var q = QUESTS[i], have = S[q.key] || 0, done = have >= q.need, claimed = !!S.qClaim[q.id];
+        var lab = claimed ? 'ОК' : done ? ('+'+q.rew) : (Math.min(have,q.need)+'/'+q.need);
+        h += '<div class="qrow"><div style="flex:1"><div class="t">'+q.name+'</div><div class="d">награда <b>'+q.rew+'</b></div></div>'
+          + '<button class="claim" data-q="'+q.id+'" '+(claimed||!done?'disabled':'')+'>'+lab+'</button></div>';
+      }
+      ql.innerHTML = h;
+    }
+    var sg = $('#skinGrid');
+    if (sg){
+      var hs = '';
+      SKINS.forEach(function(sk){
+        var own = S.skins.indexOf(sk.id) >= 0;
+        hs += '<button class="skin'+(S.skin===sk.id?' on':'')+'" data-skin="'+sk.id+'" '+(own?'':'disabled')+'>'
+          + sk.name + '<small>'+(own?'надеть':sk.how)+'</small></button>';
+      });
+      sg.innerHTML = hs;
+    }
   }
   function bumpCoins(){
     coinsBox.classList.remove('bump'); void coinsBox.offsetWidth; coinsBox.classList.add('bump');
@@ -785,8 +891,11 @@
     clearTimeout(comboTimer);
     comboTimer = setTimeout(function(){ poopWrap.classList.remove('hot'); comboBadge.classList.remove('on'); }, 700);
 
-    var gain = Math.max(1, Math.round(perTap() * mult));
+    var crit = Math.random() < (0.05 * (S.critL || 0));
+    var gain = Math.max(1, Math.round(perTap() * mult * (crit ? 3 : 1)));
     S.coins += gain; S.energy -= 1; S.taps++; S.sinceOpen++;
+    S.qTap = (S.qTap || 0) + 1;
+    if (streak >= 10) S.qCombo = 1;
 
     poop.style.setProperty('--tilt', (Math.random() * 6 - 3).toFixed(2) + 'deg');
     poop.classList.remove('hit','off'); void poop.offsetWidth; poop.classList.add('hit');
@@ -795,8 +904,8 @@
     var r = appRect(), bx = poop.getBoundingClientRect();
     var x = e && e.clientX ? e.clientX - r.left : bx.left - r.left + bx.width/2;
     var y = e && e.clientY ? e.clientY - r.top  : bx.top - r.top + 30;
-    var el = flyText(x + (Math.random()*30 - 15), y, '+' + fmt(gain));
-    if (mult > 1) el.classList.add('big');
+    var el = flyText(x + (Math.random()*30 - 15), y, (crit ? 'КРИТ +' : '+') + fmt(gain));
+    if (mult > 1 || crit) el.classList.add('big');
     shockwave(x, y);
     coinBurst(x, y, mult > 1 ? 4 : 2);
     if (mult > 1) sparkBurst(x, y, mult >= 2 ? 8 : 5);
@@ -814,6 +923,8 @@
     S.sinceOpen = 0;
     S.nextOpen = 20 + Math.floor(Math.random() * 16);
     var golden = Math.random() < 0.12;
+    if (golden) S.goldOpens = (S.goldOpens || 0) + 1;
+    S.qOpen = (S.qOpen || 0) + 1;
     var reward = Math.round((60 + 30 * S.tapL) * (1 + 0.25 * S.friends) * (golden ? 10 : 1));
     overlay.classList.toggle('gold', golden);
     $('#openTag').textContent = golden ? 'ЗОЛОТАЯ КАКАШЕЧКА ×10' : 'КАКАШЕЧКА ВЫРОСЛА';
@@ -838,8 +949,23 @@
     var u = UPS[+b.dataset.i], l = S[u.k], c = u.cost(l);
     if (l >= u.cap || S.coins < c) return;
     S.coins -= c; S[u.k] = l + 1;
+    S.qBuy = (S.qBuy || 0) + 1;
     if (u.k === 'enL') S.energy = Math.min(S.energy + 20, maxEnergy());
     snd.buy(); haptic('success'); bumpCoins(); render(); save();
+  });
+
+  document.getElementById('questList').addEventListener('click', function(e){
+    var b = e.target.closest('.claim'); if (!b || b.disabled) return;
+    ensureQuests();
+    var id = b.dataset.q, q = null;
+    for (var i=0;i<QUESTS.length;i++) if (QUESTS[i].id === id) q = QUESTS[i];
+    if (!q || S.qClaim[id] || (S[q.key]||0) < q.need) return;
+    S.qClaim[id] = 1; S.coins += q.rew;
+    toast('Задание +' + q.rew); snd.buy(); haptic('success'); bumpCoins(); render(); save();
+  });
+  document.getElementById('skinGrid').addEventListener('click', function(e){
+    var b = e.target.closest('.skin'); if (!b || b.disabled) return;
+    S.skin = b.dataset.skin; render(); save();
   });
 
   /* ---------- pack ---------- */
@@ -886,9 +1012,14 @@
 
   /* ---------- loops & save ---------- */
   setInterval(function(){
+    var need = regenMs();
+    if (!window.__regenT) window.__regenT = 0;
+    window.__regenT += 500;
+    if (window.__regenT < need) return;
+    window.__regenT = 0;
     if (S.energy < maxEnergy()){ S.energy = Math.min(maxEnergy(), S.energy + 1); render(); }
     if (S.energy >= 1) poop.classList.remove('off');
-  }, 1500);
+  }, 500);
   setInterval(function(){
     if (autoPerSec() > 0){ S.coins += autoPerSec(); bumpCoins(); render(); }
   }, 1000);
@@ -905,7 +1036,7 @@
   }
   function applyRemote(st){
     if (!st) return;
-    ['coins','tapL','enL','autoL','energy','taps','muted','sinceOpen','nextOpen','friends'].forEach(function(k){
+    ['coins','tapL','enL','autoL','critL','regenL','energy','taps','muted','sinceOpen','nextOpen','friends','goldOpens','skin','skins','qDay','qTap','qBuy','qOpen','qCombo','qClaim','streak','streakDay'].forEach(function(k){
       if (st[k] !== undefined) S[k] = st[k];
     });
     render();
@@ -917,7 +1048,7 @@
     var payload = {
       initData: tg.initData,
       startParam: startParam,
-      state: { coins:S.coins, tapL:S.tapL, enL:S.enL, autoL:S.autoL, energy:S.energy, taps:S.taps, muted:S.muted, sinceOpen:S.sinceOpen, nextOpen:S.nextOpen }
+      state: { coins:S.coins, tapL:S.tapL, enL:S.enL, autoL:S.autoL, critL:S.critL, regenL:S.regenL, energy:S.energy, taps:S.taps, muted:S.muted, sinceOpen:S.sinceOpen, nextOpen:S.nextOpen, goldOpens:S.goldOpens, skin:S.skin, skins:S.skins, qDay:S.qDay, qTap:S.qTap, qBuy:S.qBuy, qOpen:S.qOpen, qCombo:S.qCombo, qClaim:S.qClaim, streak:S.streak, streakDay:S.streakDay }
     };
     fetch(API + '/sync', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) })
       .then(function(r){ return r.json(); })
@@ -950,6 +1081,15 @@
     return r;
   };
 
+  function bumpStreak(){
+    var d = todayUTC();
+    if (S.streakDay === d) return;
+    var y = new Date(); y.setUTCDate(y.getUTCDate()-1);
+    var yest = y.toISOString().slice(0,10);
+    S.streak = (S.streakDay === yest) ? (S.streak || 0) + 1 : 1;
+    S.streakDay = d;
+  }
+  ensureQuests(); bumpStreak();
   drawSnd(); render(); serverSync();
 })();
 </script>
