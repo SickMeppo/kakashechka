@@ -62,9 +62,7 @@
   .logo i{ flex:none; width:8px; height:8px; border-radius:50%; background:var(--green); box-shadow:0 0 10px rgba(139,195,74,.7); }
   .hright{ display:flex; align-items:center; gap:6px; min-width:0; flex:1 1 0; justify-content:flex-end; }
   .user{ display:flex; align-items:center; gap:7px; font-size:12px; color:var(--muted); font-weight:600; min-width:0; flex:1 1 auto; justify-content:flex-end; }
-  .usercol{ display:flex; flex-direction:column; line-height:1.2; min-width:0; overflow:hidden; }
-  #userName{ font-size:12px; font-weight:700; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-  #outbreakTitle{ font-size:10px; color:var(--gold); font-weight:800; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  #userName{ font-size:12px; font-weight:700; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
   .ava{
     flex:none; width:26px; height:26px; border-radius:50%; background:var(--gold); color:var(--goldink);
     display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800;
@@ -473,7 +471,7 @@
   <header data-fit="s25-header-fit">
     <div class="logo"><b>КАКАШЕЧКА</b><i></i></div>
     <div class="hright">
-      <div class="user" id="userChip"><span class="ava">?</span><span class="usercol"><span id="userName">…</span><span id="outbreakTitle">Засор</span></span></div>
+      <div class="user" id="userChip" data-profile="name-only"><span class="ava">?</span><span id="userName">…</span></div>
       <button class="iconbtn" id="sndBtn" aria-label="Звук">
         <svg id="sndOn" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" stroke="none"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>
         <svg id="sndOff" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" stroke="none"/><line x1="16" y1="9" x2="22" y2="15"/><line x1="22" y1="9" x2="16" y2="15"/></svg>
