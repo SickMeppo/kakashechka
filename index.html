@@ -1340,9 +1340,16 @@
     if (!rows || !rows.length) { el.textContent = 'Пока пусто — зайди из Telegram.'; return; }
     el.innerHTML = rows.map(function(r, i){ return (i+1) + '. ' + (r.name || '?') + ' — ' + fmt(r.coins); }).join('<br>');
   }
+  function isAhead(a, b){
+    var ax = [a.taps||0, a.tapL||0, a.enL||0, a.autoL||0, a.critL||0, a.regenL||0, (a.foods&&a.foods.length)||0, (a.found&&a.found.length)||0];
+    var bx = [b.taps||0, b.tapL||0, b.enL||0, b.autoL||0, b.critL||0, b.regenL||0, (b.foods&&b.foods.length)||0, (b.found&&b.found.length)||0];
+    for (var i=0;i<ax.length;i++) if (ax[i] > bx[i]) return true;
+    return false;
+  }
   function applyRemote(st){
     if (!st) return;
-    var localAhead = (S.taps || 0) > (st.taps || 0);
+    var localAhead = isAhead(S, st);
+    var remoteAhead = isAhead(st, S);
     var progress = {
       coins:1, tapL:1, enL:1, autoL:1, critL:1, regenL:1, energy:1, taps:1,
       sinceOpen:1, nextOpen:1, goldOpens:1, skin:1, skins:1,
@@ -1352,6 +1359,7 @@
     };
     ['coins','tapL','enL','autoL','critL','regenL','energy','taps','muted','sinceOpen','nextOpen','friends','goldOpens','skin','skins','qDay','qTap','qBuy','qOpen','qCombo','qFood','qMix','qRecipe','qClaim','streak','streakDay','turboUntil','turboDay','fillDay','foods','found','plate','mixId','mixUntil'].forEach(function(k){
       if (st[k] === undefined) return;
+      if (k === 'coins' && !remoteAhead) return; /* spend-sync-v1 */
       if (localAhead && progress[k]) return;
       S[k] = st[k];
     });
@@ -1370,8 +1378,9 @@
       .then(function(r){ return r.json(); })
       .then(function(j){
         if (!j || !j.ok) return;
-        var ahead = j.state && (S.taps || 0) > (j.state.taps || 0);
-        if (j.dailyGranted && ahead) S.coins += j.dailyGranted;
+        var ahead = j.state && isAhead(S, j.state);
+        var remoteAhead = j.state && isAhead(j.state, S);
+        if (j.dailyGranted && !remoteAhead) S.coins += j.dailyGranted;
         applyRemote(j.state);
         if (j.dailyGranted) toast('Дневная какашка +' + j.dailyGranted);
         drawBoard(j.board);
