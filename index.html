@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#171009">
+<meta name="theme-color" content="#d7ece8">
 <title>КАКАШЕЧКА — кликер</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -11,10 +11,10 @@
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&family=Unbounded:wght@500;700;900&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#171009; --bg2:#1f150b; --surface:#2a1d10; --surface2:#382713;
-    --border:#43301a; --ink:#f7ecd9; --muted:#b39c7d;
-    --gold:#e8a33d; --gold2:#ffcf7d; --goldink:#2a1a05;
-    --red:#d95436; --green:#8bc34a;
+    --bg:#d7ece8; --bg2:#c9e0db; --surface:#fff8ef; --surface2:#f3e6d4;
+    --border:#b7d0cb; --ink:#2a1810; --muted:#6a4e38;
+    --gold:#d3922e; --gold2:#f0c36a; --goldink:#2a1a05;
+    --red:#c24732; --green:#4f9a55;
   }
   *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   html,body{ height:100%; }
@@ -25,16 +25,20 @@
     -webkit-user-select:none; user-select:none;
   }
   .bgpat{
-    position:fixed; inset:0; z-index:0; pointer-events:none; opacity:.06;
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Cg fill='none' stroke='%23e8a33d' stroke-opacity='0.6'%3E%3Cpath d='M20 4a8 8 0 1 0 8 8'/%3E%3Cpath d='M20 12a4 4 0 1 0 4 4'/%3E%3C/g%3E%3C/svg%3E");
-    background-size:40px 40px;
+    position:fixed; inset:0; z-index:0; pointer-events:none; opacity:1;
+    background-color:#d7ece8;
+    background-image:
+      linear-gradient(#c3dbd6 1px, transparent 1px),
+      linear-gradient(90deg, #c3dbd6 1px, transparent 1px);
+    background-size:28px 28px;
   }
   #app{
     position:relative; z-index:1; max-width:430px; margin:0 auto;
     height:100dvh; display:flex; flex-direction:column;
     background:
-      radial-gradient(90% 55% at 50% 58%, rgba(232,163,61,.10) 0%, transparent 58%),
-      radial-gradient(120% 70% at 50% -10%, #2c1c0c 0%, var(--bg) 62%);
+      radial-gradient(90% 50% at 50% 8%, rgba(255,248,239,.9) 0%, transparent 58%),
+      radial-gradient(80% 40% at 50% 62%, rgba(255,248,239,.35) 0%, transparent 70%),
+      transparent;
   }
   @media (min-width:500px){ #app{ border-left:1px solid var(--border); border-right:1px solid var(--border); } }
 
@@ -44,13 +48,15 @@
     padding:calc(env(safe-area-inset-top) + 12px) 16px 4px;
   }
   .logo{
-    font-family:'Unbounded'; font-weight:900; font-size:18px; letter-spacing:.12em;
-    color:var(--gold); display:flex; align-items:center; gap:8px;
-    text-shadow:0 2px 14px rgba(232,163,61,.25);
+    font-family:'Unbounded'; font-weight:900; font-size:18px; letter-spacing:.08em;
+    color:var(--ink); display:flex; align-items:center; gap:8px;
   }
   .logo i{ width:9px; height:9px; border-radius:50%; background:var(--green); box-shadow:0 0 10px rgba(139,195,74,.7); }
   .hright{ display:flex; align-items:center; gap:8px; }
-  .user{ display:flex; align-items:center; gap:7px; font-size:12px; color:var(--muted); font-weight:600; }
+  .user{ display:flex; align-items:center; gap:7px; font-size:12px; color:var(--muted); font-weight:600; min-width:0; }
+  .usercol{ display:flex; flex-direction:column; line-height:1.2; min-width:0; }
+  #userName{ font-size:12px; font-weight:700; color:var(--ink); }
+  #outbreakTitle{ font-size:10px; color:var(--gold); font-weight:800; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .ava{
     width:26px; height:26px; border-radius:50%; background:var(--gold); color:var(--goldink);
     display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800;
@@ -85,7 +91,28 @@
   .screen.on{ display:flex; flex-direction:column; }
 
   /* tap screen */
-  #scr-tap{ align-items:center; justify-content:center; gap:10px; overflow:hidden; }
+  #scr-tap{ align-items:center; justify-content:flex-start; gap:8px; overflow:hidden; padding-top:4px; }
+  .dailystrip{ width:100%; padding:0 12px; display:flex; gap:8px; flex:none; }
+  .dailytile{
+    flex:1; min-width:0; min-height:64px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+    background:var(--surface); border:1px solid var(--border); border-radius:14px;
+    color:var(--ink); cursor:pointer; padding:8px 4px;
+  }
+  .dailytile:active{ transform:scale(.97); }
+  .dailytile .dico{ font-size:16px; line-height:1; }
+  .dailytile .dname{ font-size:10px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); }
+  .dailytile .dtime{ font-family:'Unbounded'; font-size:12px; color:var(--gold); font-weight:700; }
+  .boosts{ display:flex; gap:8px; width:calc(100% - 32px); flex:none; }
+  .boost{
+    flex:1; min-height:44px; border-radius:12px; border:1px solid var(--border);
+    background:var(--surface2); color:var(--ink); cursor:pointer;
+    font-family:'Unbounded'; font-weight:800; font-size:12px; padding:8px 6px;
+  }
+  .boost small{ display:block; font-family:'Manrope'; font-weight:600; font-size:10px; color:var(--muted); margin-top:2px; }
+  .boost.on{ border-color:var(--gold); color:var(--gold); }
+  .boost:disabled{ opacity:.45; cursor:default; }
+  .boost:not(:disabled):active{ transform:scale(.97); }
   .combo{
     position:absolute; top:6px; left:50%; transform:translateX(-50%) scale(.6);
     font-family:'Unbounded'; font-weight:700; font-size:13px; letter-spacing:.08em;
@@ -93,32 +120,23 @@
     background:rgba(232,163,61,.08); opacity:0; transition:opacity .15s, transform .15s; pointer-events:none;
   }
   .combo.on{ opacity:1; transform:translateX(-50%) scale(1); }
-  .poopwrap{ position:relative; display:grid; place-items:center; width:min(78vw,310px); }
+  .poopwrap{ position:relative; display:grid; place-items:center; width:min(72vw,280px); flex:none; }
   .comboring{
     position:absolute; inset:6%; border-radius:50%; border:2px solid var(--gold);
     opacity:0; pointer-events:none; transition:opacity .2s; z-index:2;
   }
   .poopwrap.hot .comboring{ opacity:1; animation:ring 1.05s ease-out infinite; }
   @keyframes ring{ 0%{ transform:scale(.88); opacity:.6; } 100%{ transform:scale(1.28); opacity:0; } }
-  .bowl{
-    position:absolute; left:4%; right:4%; bottom:0; height:34%;
-    pointer-events:none; z-index:0;
-  }
-  .bowl svg{ width:100%; height:100%; display:block; filter:drop-shadow(0 10px 18px rgba(0,0,0,.45)); }
-  .spot{
-    position:absolute; width:78%; height:62%; left:11%; top:18%;
-    border-radius:50%; pointer-events:none; z-index:0;
-    background:radial-gradient(circle, rgba(255,207,125,.22) 0%, rgba(232,163,61,.06) 42%, transparent 70%);
-  }
+  .bowl, .spot{ display:none; }
 
   #poop{
-    position:relative; z-index:1; width:86%; aspect-ratio:1; background:none; border:none; padding:0; cursor:pointer;
-    filter:drop-shadow(0 10px 22px rgba(0,0,0,.5));
-    margin-bottom:8%;
+    position:relative; z-index:1; width:100%; aspect-ratio:1; background:none; border:none; padding:0; cursor:pointer;
+    filter:drop-shadow(0 14px 22px rgba(42,24,16,.28));
   }
-  #poop svg{ width:100%; height:100%; display:block; overflow:visible; }
-  #poop.spawn svg{ animation:spawn .55s cubic-bezier(.2,1.6,.3,1); }
-  #poop.off{ filter:grayscale(.55) brightness(.7) drop-shadow(0 18px 44px rgba(0,0,0,.55)); }
+  #poop img{ width:100%; height:100%; object-fit:contain; display:block; pointer-events:none; border-radius:18px; }
+  #poop.spawn img{ animation:spawn .55s cubic-bezier(.2,1.6,.3,1); }
+  #poop.off img{ filter:grayscale(.35) brightness(.82); }
+  #poop.hit img{ animation:squish .27s cubic-bezier(.3,.9,.3,1); }
   @keyframes spawn{ from{ transform:scale(.4); opacity:0;} }
 
   /* --- какашечка: живая пластика --- */
@@ -312,12 +330,11 @@
     border-radius:14px; cursor:pointer; padding:12px 10px; text-align:left; font-weight:800; font-size:13px;
   }
   .skin small{ display:block; font-weight:600; color:var(--muted); margin-top:4px; font-size:11px; }
+  .skin{ display:flex; align-items:center; gap:10px; }
+  .skin img{ width:44px; height:44px; border-radius:10px; object-fit:cover; flex:none; background:var(--bg); }
+  .skin .skinlab{ flex:1; min-width:0; }
   .skin.on{ border-color:var(--gold); color:var(--gold); }
   .skin:disabled{ opacity:.45; cursor:default; }
-  #poop.skin-gold{ filter:drop-shadow(0 10px 22px rgba(0,0,0,.5)) sepia(.55) saturate(1.7) hue-rotate(8deg); }
-  #poop.skin-spicy{ filter:drop-shadow(0 10px 22px rgba(0,0,0,.5)) hue-rotate(-18deg) saturate(1.45); }
-  #poop.skin-sleepy{ filter:drop-shadow(0 10px 22px rgba(0,0,0,.5)) grayscale(.35) brightness(.85); }
-  #poop.skin-fly{ filter:drop-shadow(0 10px 22px rgba(0,0,0,.5)) hue-rotate(70deg) saturate(1.1); }
   .streak{ margin:8px 16px; padding:10px 14px; border-radius:13px; background:var(--surface); border:1px solid var(--border); font-size:13px; color:var(--muted); }
   .streak b{ color:var(--gold); }
 
@@ -340,8 +357,8 @@
   #openOverlay.show .rays{ opacity:1; }
   #openOverlay.gold .rays{ filter:brightness(1.6); }
   @keyframes spin{ to{ transform:translate(-50%,-50%) rotate(360deg); } }
-  .openpoop{ position:relative; width:180px; margin:6px auto 10px; }
-  .openpoop svg{ width:100%; display:block; filter:drop-shadow(0 14px 40px rgba(232,163,61,.35)); }
+  .openpoop{ position:relative; width:200px; margin:6px auto 10px; }
+  .openpoop img{ width:100%; display:block; border-radius:16px; filter:drop-shadow(0 14px 40px rgba(232,163,61,.35)); }
   .openpoop .rise{ animation:rise .6s cubic-bezier(.2,1.5,.4,1); }
   @keyframes rise{ from{ transform:translateY(30px) scale(.6); opacity:0; } }
   .opentag{ font-family:'Unbounded'; font-weight:700; font-size:12px; letter-spacing:.24em; color:var(--muted); }
@@ -378,7 +395,7 @@
   <header>
     <div class="logo">КАКАШЕЧКА<i></i></div>
     <div class="hright">
-      <div class="user" id="userChip"><span class="ava">?</span><span id="userName">…</span></div>
+      <div class="user" id="userChip"><span class="ava">?</span><span class="usercol"><span id="userName">…</span><span id="outbreakTitle">Засор</span></span></div>
       <button class="iconbtn" id="sndBtn" aria-label="Звук">
         <svg id="sndOn" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" stroke="none"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg>
         <svg id="sndOff" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" stroke="none"/><line x1="16" y1="9" x2="22" y2="15"/><line x1="22" y1="9" x2="16" y2="15"/></svg>
@@ -390,7 +407,7 @@
     <div class="coins" id="coinsBox"><span id="coinsVal">0</span><span class="cur">какоинов</span></div>
     <div class="hudsub">
       <span><b id="perTap">+2</b> за тап</span>
-      <span id="cpsWrap" style="display:none"><b id="cps">0</b>/сек муха</span>
+      <span id="cpsWrap"><b id="cps">0</b>/сек заражение</span>
     </div>
     <div class="energy">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--gold)"><polygon points="13 2 3 14 11 14 9 22 19 10 12 10 13 2"/></svg>
@@ -402,6 +419,23 @@
   <main>
     <!-- ТАПАТЬ -->
     <section class="screen on" id="scr-tap">
+      <div class="dailystrip">
+        <button type="button" class="dailytile" id="dailyReward">
+          <span class="dico">🎁</span>
+          <span class="dname">Награда</span>
+          <span class="dtime" id="dailyRewardT">--:--</span>
+        </button>
+        <button type="button" class="dailytile" id="dailyCipher">
+          <span class="dico">🔐</span>
+          <span class="dname">Шифр</span>
+          <span class="dtime">скоро</span>
+        </button>
+        <button type="button" class="dailytile" id="dailyCombo">
+          <span class="dico">🃏</span>
+          <span class="dname">Комбо</span>
+          <span class="dtime">скоро</span>
+        </button>
+      </div>
       <div class="combo" id="comboBadge">КОМБО ×1.5</div>
       <div class="poopwrap" id="poopWrap">
         <div class="spot"></div>
@@ -417,103 +451,12 @@
         </div>
         <div class="comboring"></div>
         <button id="poop" aria-label="Тапнуть по какашечке">
-          <svg viewBox="0 0 200 200" aria-hidden="true">
-            <defs>
-              <linearGradient id="t-g1" x1=".28" y1="0" x2=".72" y2="1">
-                <stop offset="0" stop-color="#96592a"/><stop offset="1" stop-color="#5b3416"/></linearGradient>
-              <linearGradient id="t-g2" x1=".28" y1="0" x2=".72" y2="1">
-                <stop offset="0" stop-color="#a86b34"/><stop offset="1" stop-color="#6e4019"/></linearGradient>
-              <linearGradient id="t-g3" x1=".28" y1="0" x2=".72" y2="1">
-                <stop offset="0" stop-color="#b87b3e"/><stop offset="1" stop-color="#7f4a1f"/></linearGradient>
-              <linearGradient id="t-g4" x1=".28" y1="0" x2=".72" y2="1">
-                <stop offset="0" stop-color="#c98c4e"/><stop offset="1" stop-color="#93592a"/></linearGradient>
-              <radialGradient id="t-glow">
-                <stop offset="0" stop-color="#e8a33d" stop-opacity=".55"/>
-                <stop offset="1" stop-color="#e8a33d" stop-opacity="0"/></radialGradient>
-            </defs>
-
-            <ellipse class="pglow" cx="100" cy="108" rx="88" ry="84" fill="url(#t-glow)"/>
-
-            <!-- аромат -->
-            <g class="aroma" fill="none" stroke="#c9945a" stroke-width="2.6" stroke-linecap="round" opacity="0">
-              <path d="M26 110q-8-9 0-18t0-16"/>
-              <path d="M174 110q8-9 0-18t0-16"/>
-            </g>
-
-            <ellipse class="pshadow" cx="100" cy="184" rx="52" ry="8" fill="#000" opacity=".28"/>
-
-            <g class="pbody">
-              <g class="psquish">
-                <!-- нижний ярус -->
-                <path class="p1" d="M23 154C23 128 52 110 100 110C149 110 177 130 177 156C177 172 146 180 99 180C52 180 23 170 23 154Z"
-                      fill="url(#t-g1)" stroke="#38230f" stroke-width="3.4" stroke-linejoin="round"/>
-                <path class="sheen" d="M36 152q-1-19 20-30" fill="none" stroke="#d09b5c" stroke-width="4.5" stroke-linecap="round" opacity=".32"/>
-                <ellipse cx="146" cy="146" rx="5" ry="3.6" fill="#3d2410" opacity=".2"/>
-                <ellipse cx="62" cy="163" rx="4" ry="2.8" fill="#3d2410" opacity=".18"/>
-
-                <!-- средний ярус -->
-                <path class="p2" d="M44 102C43 78 66 62 101 62C136 62 157 79 156 103C155 116 133 123 100 123C67 123 45 116 44 102Z"
-                      fill="url(#t-g2)" stroke="#38230f" stroke-width="3.4" stroke-linejoin="round"/>
-                <path class="sheen" d="M55 100q-2-16 16-27" fill="none" stroke="#d09b5c" stroke-width="4" stroke-linecap="round" opacity=".3"/>
-
-                <!-- верхний ярус -->
-                <path class="p3" d="M65 56C63 39 79 28 100 28C120 28 133 38 132 53C131 65 117 71 99 71C79 71 66 68 65 56Z"
-                      fill="url(#t-g3)" stroke="#38230f" stroke-width="3.4" stroke-linejoin="round"/>
-                <path class="sheen" d="M74 52q-1-11 11-17" fill="none" stroke="#d09b5c" stroke-width="3.4" stroke-linecap="round" opacity=".32"/>
-
-                <!-- завиток -->
-                <path class="p4" d="M104 12C103 4 111 1 116 6C120.5 10.5 116 18.5 110 17C107 16.2 104.5 14.3 104 12Z"
-                      fill="url(#t-g4)" stroke="#38230f" stroke-width="2.8" stroke-linejoin="round"/>
-                <path class="p4" d="M83 34C78 20 88 8 102 9C112 9.7 119 16 119 24C119 33 110 41 99 41C91 41 86 39 83 34Z"
-                      fill="url(#t-g4)" stroke="#38230f" stroke-width="3.2" stroke-linejoin="round"/>
-                <path class="sheen" d="M89 29q-1-10 10-14" fill="none" stroke="#e0b478" stroke-width="3" stroke-linecap="round" opacity=".42"/>
-
-                <!-- мордочка -->
-                <ellipse cx="62" cy="104" rx="7.5" ry="4.6" fill="#cc6642" opacity=".42"/>
-                <ellipse cx="138" cy="104" rx="7.5" ry="4.6" fill="#cc6642" opacity=".42"/>
-                <g class="eyesq">
-                  <g class="eyes">
-                    <ellipse cx="80" cy="90" rx="12.8" ry="14.4" fill="#fff7ea"/>
-                    <ellipse cx="120" cy="90" rx="12.8" ry="14.4" fill="#fff7ea"/>
-                    <circle cx="82.6" cy="93" r="6.2" fill="#1e1408"/>
-                    <circle cx="122.6" cy="93" r="6.2" fill="#1e1408"/>
-                    <circle cx="85.2" cy="90.2" r="2.3" fill="#fff"/>
-                    <circle cx="125.2" cy="90.2" r="2.3" fill="#fff"/>
-                    <circle cx="78.6" cy="96.6" r="1.2" fill="#fff" opacity=".65"/>
-                    <circle cx="118.6" cy="96.6" r="1.2" fill="#fff" opacity=".65"/>
-                  </g>
-                </g>
-                <path class="m-smile" d="M87 105q13 13.5 26 0" fill="none" stroke="#24140a" stroke-width="4.2" stroke-linecap="round"/>
-                <g class="m-open">
-                  <ellipse cx="100" cy="110" rx="9.2" ry="8.6" fill="#24140a"/>
-                  <ellipse cx="100" cy="115.4" rx="5" ry="3" fill="#cc6250"/>
-                </g>
-              </g>
-            </g>
-
-            <!-- zzz при пустой энергии -->
-            <g class="zzz" fill="#b39c7d" font-family="Unbounded,sans-serif" font-weight="700">
-              <text x="140" y="46" font-size="15">z</text>
-              <text x="155" y="32" font-size="11">z</text>
-            </g>
-
-            <!-- муха-приятель -->
-            <g class="flyorbit">
-              <g class="flydart">
-                <g transform="translate(168,42) scale(1.4)">
-                  <g class="flyw">
-                    <ellipse cx="-5" cy="-6" rx="7.5" ry="3.2" fill="#e6cfa4" opacity=".55" transform="rotate(-30 -5 -6)"/>
-                    <ellipse cx="5" cy="-6" rx="7.5" ry="3.2" fill="#e6cfa4" opacity=".55" transform="rotate(30 5 -6)"/>
-                  </g>
-                  <ellipse cx="0" cy="0" rx="7.4" ry="5.4" fill="#33261a"/>
-                  <circle cx="6.2" cy="-2.6" r="3.3" fill="#3f2f1f"/>
-                  <circle cx="7.4" cy="-3.4" r="1.2" fill="#e8a33d"/>
-                  <path d="M4.6-6.4 8-9.6M7.4-5 11-6.8" stroke="#33261a" stroke-width="1.3" stroke-linecap="round" fill="none"/>
-                </g>
-              </g>
-            </g>
-          </svg>
+          <img id="poopArt" src="img/basic.png" alt="">
         </button>
+      </div>
+      <div class="boosts">
+        <button type="button" class="boost" id="boostTurbo">Турбо ×2<small id="turboLeft">1/день</small></button>
+        <button type="button" class="boost" id="boostFill">Напор<small id="fillLeft">фулл энергия</small></button>
       </div>
       <div class="hint" id="hint">Тапай по какашечке</div>
     </section>
@@ -589,49 +532,7 @@
   <div class="opencard">
     <div class="rays"></div>
     <div class="openpoop">
-      <svg viewBox="0 0 200 200" aria-hidden="true">
-        <defs>
-          <linearGradient id="o-g1" x1=".28" y1="0" x2=".72" y2="1">
-            <stop offset="0" stop-color="#96592a"/><stop offset="1" stop-color="#5b3416"/></linearGradient>
-          <linearGradient id="o-g2" x1=".28" y1="0" x2=".72" y2="1">
-            <stop offset="0" stop-color="#a86b34"/><stop offset="1" stop-color="#6e4019"/></linearGradient>
-          <linearGradient id="o-g3" x1=".28" y1="0" x2=".72" y2="1">
-            <stop offset="0" stop-color="#b87b3e"/><stop offset="1" stop-color="#7f4a1f"/></linearGradient>
-          <linearGradient id="o-g4" x1=".28" y1="0" x2=".72" y2="1">
-            <stop offset="0" stop-color="#c98c4e"/><stop offset="1" stop-color="#93592a"/></linearGradient>
-          <linearGradient id="o-gd1" x1=".28" y1="0" x2=".72" y2="1">
-            <stop offset="0" stop-color="#d8a03a"/><stop offset="1" stop-color="#96650f"/></linearGradient>
-          <linearGradient id="o-gd2" x1=".28" y1="0" x2=".72" y2="1">
-            <stop offset="0" stop-color="#ecb954"/><stop offset="1" stop-color="#ab7815"/></linearGradient>
-          <linearGradient id="o-gd3" x1=".28" y1="0" x2=".72" y2="1">
-            <stop offset="0" stop-color="#f8d073"/><stop offset="1" stop-color="#c08b21"/></linearGradient>
-          <linearGradient id="o-gd4" x1=".28" y1="0" x2=".72" y2="1">
-            <stop offset="0" stop-color="#ffe6a5"/><stop offset="1" stop-color="#d9a53a"/></linearGradient>
-        </defs>
-        <g class="rise">
-          <ellipse cx="100" cy="184" rx="58" ry="9.5" fill="#000" opacity=".32"/>
-          <path class="p1 pstroke" d="M23 154C23 128 52 110 100 110C149 110 177 130 177 156C177 172 146 180 99 180C52 180 23 170 23 154Z"
-                fill="url(#o-g1)" stroke="#38230f" stroke-width="3.4" stroke-linejoin="round"/>
-          <path class="sheen" d="M36 152q-1-19 20-30" fill="none" stroke="#d09b5c" stroke-width="4.5" stroke-linecap="round" opacity=".32"/>
-          <path class="p2 pstroke" d="M44 102C43 78 66 62 101 62C136 62 157 79 156 103C155 116 133 123 100 123C67 123 45 116 44 102Z"
-                fill="url(#o-g2)" stroke="#38230f" stroke-width="3.4" stroke-linejoin="round"/>
-          <path class="sheen" d="M55 100q-2-16 16-27" fill="none" stroke="#d09b5c" stroke-width="4" stroke-linecap="round" opacity=".3"/>
-          <path class="p3 pstroke" d="M65 56C63 39 79 28 100 28C120 28 133 38 132 53C131 65 117 71 99 71C79 71 66 68 65 56Z"
-                fill="url(#o-g3)" stroke="#38230f" stroke-width="3.4" stroke-linejoin="round"/>
-          <path class="sheen" d="M74 52q-1-11 11-17" fill="none" stroke="#d09b5c" stroke-width="3.4" stroke-linecap="round" opacity=".32"/>
-          <path class="p4 pstroke" d="M104 12C103 4 111 1 116 6C120.5 10.5 116 18.5 110 17C107 16.2 104.5 14.3 104 12Z"
-                fill="url(#o-g4)" stroke="#38230f" stroke-width="2.8" stroke-linejoin="round"/>
-          <path class="p4 pstroke" d="M83 34C78 20 88 8 102 9C112 9.7 119 16 119 24C119 33 110 41 99 41C91 41 86 39 83 34Z"
-                fill="url(#o-g4)" stroke="#38230f" stroke-width="3.2" stroke-linejoin="round"/>
-          <path class="sheen" d="M89 29q-1-10 10-14" fill="none" stroke="#e0b478" stroke-width="3" stroke-linecap="round" opacity=".42"/>
-          <ellipse cx="62" cy="104" rx="7.5" ry="4.6" fill="#cc6642" opacity=".42"/>
-          <ellipse cx="138" cy="104" rx="7.5" ry="4.6" fill="#cc6642" opacity=".42"/>
-          <path d="M69 84q11-9 22 0" fill="none" stroke="#33200d" stroke-width="3.4" stroke-linecap="round"/>
-          <path d="M109 84q11-9 22 0" fill="none" stroke="#33200d" stroke-width="3.4" stroke-linecap="round"/>
-          <path d="M86 100q14 16 28 0" fill="none" stroke="#33200d" stroke-width="3.4" stroke-linecap="round"/>
-          <path d="M89 101q11 3 22 0q-3 10-11 10t-11-10Z" fill="#33200d"/>
-        </g>
-      </svg>
+      <img id="openArt" class="rise" src="img/basic.png" alt="">
     </div>
     <div class="opentag" id="openTag">КАКАШЕЧКА ВЫРОСЛА</div>
     <div class="openrew" id="openRew">+0</div>
@@ -649,7 +550,7 @@
 
   /* ---------- Telegram ---------- */
   var tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
-  if (tg) { try { tg.ready(); tg.expand(); tg.setHeaderColor('#171009'); tg.setBackgroundColor('#171009'); } catch(e){} }
+  if (tg) { try { tg.ready(); tg.expand(); tg.setHeaderColor('#d7ece8'); tg.setBackgroundColor('#d7ece8'); } catch(e){} }
   var tgUser = tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? tg.initDataUnsafe.user : null;
   var startParam = (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) ? tg.initDataUnsafe.start_param : '';
   var API = 'https://webcast-turtle-careers-delayed.trycloudflare.com';
@@ -658,7 +559,7 @@
 
   /* ---------- state ---------- */
   var KEY = 'poop_clicker_v1';
-  var DEF = { coins:0, tapL:0, enL:0, autoL:0, critL:0, regenL:0, energy:100, muted:false, taps:0, sinceOpen:0, nextOpen: 20 + Math.floor(Math.random()*16), lastSeen: Date.now(), friends:0, goldOpens:0, skin:'basic', skins:['basic'], qDay:'', qTap:0, qBuy:0, qOpen:0, qCombo:0, qClaim:{}, streak:0, streakDay:'' };
+  var DEF = { coins:0, tapL:0, enL:0, autoL:0, critL:0, regenL:0, energy:100, muted:false, taps:0, sinceOpen:0, nextOpen: 20 + Math.floor(Math.random()*16), lastSeen: Date.now(), friends:0, goldOpens:0, skin:'basic', skins:['basic'], qDay:'', qTap:0, qBuy:0, qOpen:0, qCombo:0, qClaim:{}, streak:0, streakDay:'', turboUntil:0, turboDay:'', fillDay:'' };
   var S;
   try { S = Object.assign({}, DEF, JSON.parse(localStorage.getItem(KEY) || '{}')); }
   catch(e){ S = Object.assign({}, DEF); }
@@ -669,6 +570,28 @@
   function autoPerSec(){ return S.autoL; }
   function regenMs(){ return Math.max(700, 1500 - 80 * (S.regenL || 0)); }
   function todayUTC(){ return new Date().toISOString().slice(0,10); }
+  function pad2(n){ return (n < 10 ? '0' : '') + n; }
+  function utcLeft(){
+    var n = new Date();
+    var end = Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate() + 1);
+    var s = Math.max(0, Math.floor((end - n.getTime()) / 1000));
+    return pad2(Math.floor(s / 3600)) + ':' + pad2(Math.floor((s % 3600) / 60));
+  }
+  function turboOn(){ return Date.now() < (S.turboUntil || 0); }
+  var RANKS = [
+    [0, 'Засор'],
+    [50, 'Запах в подъезде'],
+    [200, 'Скрин в семейном чате'],
+    [500, 'Репост у тёти'],
+    [1500, 'Тренд в двух пабликах'],
+    [5000, 'Федеральный слив'],
+    [15000, 'Мем вне контроля']
+  ];
+  function outbreakTitle(){
+    var t = S.taps || 0, name = RANKS[0][1];
+    for (var i = 0; i < RANKS.length; i++) if (t >= RANKS[i][0]) name = RANKS[i][1];
+    return name;
+  }
   function ensureQuests(){
     var d = todayUTC();
     if (S.qDay !== d){ S.qDay = d; S.qTap=0; S.qBuy=0; S.qOpen=0; S.qCombo=0; S.qClaim={}; }
@@ -740,8 +663,26 @@
   var coinsBox = $('#coinsBox');
   function render(){
     $('#coinsVal').textContent = fmt(S.coins);
-    $('#perTap').textContent = '+' + fmt(Math.round(perTap()));
-    if (autoPerSec() > 0){ $('#cpsWrap').style.display=''; $('#cps').textContent = fmt(autoPerSec()); }
+    $('#perTap').textContent = '+' + fmt(Math.round(perTap() * (turboOn() ? 2 : 1)));
+    $('#cps').textContent = fmt(autoPerSec());
+    var ot = $('#outbreakTitle'); if (ot) ot.textContent = outbreakTitle();
+    var drt = $('#dailyRewardT'); if (drt) drt.textContent = utcLeft();
+    var tb = $('#boostTurbo'), tl = $('#turboLeft');
+    if (tb){
+      var tOn = turboOn();
+      tb.classList.toggle('on', tOn);
+      tb.disabled = !tOn && S.turboDay === todayUTC();
+      if (tl){
+        if (tOn) tl.textContent = Math.max(1, Math.ceil((S.turboUntil - Date.now()) / 1000)) + 'с';
+        else tl.textContent = (S.turboDay === todayUTC()) ? 'завтра' : '1/день';
+      }
+    }
+    var fb = $('#boostFill'), fl = $('#fillLeft');
+    if (fb){
+      var used = S.fillDay === todayUTC();
+      fb.disabled = used;
+      if (fl) fl.textContent = used ? 'завтра' : 'фулл энергия';
+    }
     var max = maxEnergy();
     var pct = Math.max(0, Math.min(100, S.energy / max * 100));
     var fill = $('#energyFill');
@@ -774,6 +715,10 @@
     { id:'open', name:'Открой какашку', need:1, key:'qOpen', rew:120 },
     { id:'combo', name:'Серия 10 тапов', need:1, key:'qCombo', rew:60 }
   ];
+  var SKIN_ART = {
+    basic:'img/basic.png', gold:'img/gold.png', spicy:'img/spicy.png',
+    sleepy:'img/sleepy.png', fly:'img/fly.png'
+  };
   var SKINS = [
     { id:'basic', name:'Обычная', how:'сразу', ok:function(){ return true; } },
     { id:'gold', name:'Золотая', how:'1 золотая', ok:function(){ return (S.goldOpens||0) >= 1; } },
@@ -787,9 +732,11 @@
     });
   }
   function applySkinClass(){
-    if (!poop) return;
-    poop.classList.remove('skin-gold','skin-spicy','skin-sleepy','skin-fly');
-    if (S.skin && S.skin !== 'basic') poop.classList.add('skin-'+S.skin);
+    var art = $('#poopArt');
+    if (!art) return;
+    var id = S.skin || 'basic';
+    if (poop && poop.classList.contains('off') && id === 'basic') id = 'sleepy';
+    art.src = SKIN_ART[id] || SKIN_ART.basic;
   }
   function renderJobs(){
     ensureQuests();
@@ -812,7 +759,8 @@
       SKINS.forEach(function(sk){
         var own = S.skins.indexOf(sk.id) >= 0;
         hs += '<button class="skin'+(S.skin===sk.id?' on':'')+'" data-skin="'+sk.id+'" '+(own?'':'disabled')+'>'
-          + sk.name + '<small>'+(own?'надеть':sk.how)+'</small></button>';
+          + '<img src="'+(SKIN_ART[sk.id]||SKIN_ART.basic)+'" alt="">'
+          + '<span class="skinlab">'+sk.name+'<small>'+(own?'надеть':sk.how)+'</small></span></button>';
       });
       sg.innerHTML = hs;
     }
@@ -872,6 +820,7 @@
   function tapPoop(e){
     if (S.energy < 1){
       poop.classList.add('off');
+      applySkinClass();
       hint.textContent = 'Кишечник пуст — энергия восстановится сама';
       hint.classList.add('warn');
       clearTimeout(hintTimer);
@@ -892,7 +841,7 @@
     comboTimer = setTimeout(function(){ poopWrap.classList.remove('hot'); comboBadge.classList.remove('on'); }, 700);
 
     var crit = Math.random() < (0.05 * (S.critL || 0));
-    var gain = Math.max(1, Math.round(perTap() * mult * (crit ? 3 : 1)));
+    var gain = Math.max(1, Math.round(perTap() * mult * (crit ? 3 : 1) * (turboOn() ? 2 : 1)));
     S.coins += gain; S.energy -= 1; S.taps++; S.sinceOpen++;
     S.qTap = (S.qTap || 0) + 1;
     if (streak >= 10) S.qCombo = 1;
@@ -927,6 +876,7 @@
     S.qOpen = (S.qOpen || 0) + 1;
     var reward = Math.round((60 + 30 * S.tapL) * (1 + 0.25 * S.friends) * (golden ? 10 : 1));
     overlay.classList.toggle('gold', golden);
+    var oa = $('#openArt'); if (oa) oa.src = golden ? SKIN_ART.gold : SKIN_ART.basic;
     $('#openTag').textContent = golden ? 'ЗОЛОТАЯ КАКАШЕЧКА ×10' : 'КАКАШЕЧКА ВЫРОСЛА';
     $('#openRew').textContent = '+' + fmt(reward);
     $('#openSub').textContent = golden ? 'Редкая удача — десятка сверху!' : 'Забирай и корми дальше — она бесконечная';
@@ -987,6 +937,34 @@
   $('#copyBtn').addEventListener('click', copyRef);
   $('#starsBtn').addEventListener('click', function(){ toast('Монетизация — после MVP ;)'); haptic('light'); });
 
+  function useTurbo(){
+    if (turboOn()){ toast('Турбо уже орёт'); return; }
+    if (S.turboDay === todayUTC()){ toast('Турбо завтра'); return; }
+    S.turboDay = todayUTC();
+    S.turboUntil = Date.now() + 20000;
+    toast('ТУРБО ×2 на 20 сек');
+    snd.buy(); haptic('success'); render(); save();
+  }
+  function useFill(){
+    if (S.fillDay === todayUTC()){ toast('Напор завтра'); return; }
+    S.fillDay = todayUTC();
+    S.energy = maxEnergy();
+    if (poop) poop.classList.remove('off');
+    toast('Напор полный');
+    snd.buy(); haptic('success'); render(); save();
+  }
+  $('#boostTurbo').addEventListener('click', useTurbo);
+  $('#boostFill').addEventListener('click', useFill);
+  $('#dailyReward').addEventListener('click', function(){ toast('Дневная какашка капает при входе из Telegram'); haptic('light'); });
+  $('#dailyCipher').addEventListener('click', function(){ toast('Шифр дня — следующая волна'); haptic('light'); });
+  $('#dailyCombo').addEventListener('click', function(){
+    document.querySelectorAll('.tab').forEach(function(x){ x.classList.remove('on'); });
+    document.querySelectorAll('.screen').forEach(function(x){ x.classList.remove('on'); });
+    document.querySelector('.tab[data-scr="scr-job"]').classList.add('on');
+    document.getElementById('scr-job').classList.add('on');
+    toast('Комбо дня — следующая волна'); haptic('light');
+  });
+
   /* ---------- tabs ---------- */
   document.querySelectorAll('.tab').forEach(function(t){
     t.addEventListener('click', function(){
@@ -1018,12 +996,17 @@
     if (window.__regenT < need) return;
     window.__regenT = 0;
     if (S.energy < maxEnergy()){ S.energy = Math.min(maxEnergy(), S.energy + 1); render(); }
-    if (S.energy >= 1) poop.classList.remove('off');
+    if (S.energy >= 1){ poop.classList.remove('off'); applySkinClass(); }
   }, 500);
   setInterval(function(){
     if (autoPerSec() > 0){ S.coins += autoPerSec(); bumpCoins(); render(); }
   }, 1000);
   setInterval(save, 3000);
+  setInterval(function(){
+    var drt = $('#dailyRewardT'); if (drt) drt.textContent = utcLeft();
+    var tb = $('#boostTurbo');
+    if (tb && (turboOn() || tb.classList.contains('on'))) render();
+  }, 1000);
   document.addEventListener('visibilitychange', function(){ if (document.hidden) save(); });
   window.addEventListener('pagehide', save);
 
@@ -1036,7 +1019,7 @@
   }
   function applyRemote(st){
     if (!st) return;
-    ['coins','tapL','enL','autoL','critL','regenL','energy','taps','muted','sinceOpen','nextOpen','friends','goldOpens','skin','skins','qDay','qTap','qBuy','qOpen','qCombo','qClaim','streak','streakDay'].forEach(function(k){
+    ['coins','tapL','enL','autoL','critL','regenL','energy','taps','muted','sinceOpen','nextOpen','friends','goldOpens','skin','skins','qDay','qTap','qBuy','qOpen','qCombo','qClaim','streak','streakDay','turboUntil','turboDay','fillDay'].forEach(function(k){
       if (st[k] !== undefined) S[k] = st[k];
     });
     render();
@@ -1048,7 +1031,7 @@
     var payload = {
       initData: tg.initData,
       startParam: startParam,
-      state: { coins:S.coins, tapL:S.tapL, enL:S.enL, autoL:S.autoL, critL:S.critL, regenL:S.regenL, energy:S.energy, taps:S.taps, muted:S.muted, sinceOpen:S.sinceOpen, nextOpen:S.nextOpen, goldOpens:S.goldOpens, skin:S.skin, skins:S.skins, qDay:S.qDay, qTap:S.qTap, qBuy:S.qBuy, qOpen:S.qOpen, qCombo:S.qCombo, qClaim:S.qClaim, streak:S.streak, streakDay:S.streakDay }
+      state: { coins:S.coins, tapL:S.tapL, enL:S.enL, autoL:S.autoL, critL:S.critL, regenL:S.regenL, energy:S.energy, taps:S.taps, muted:S.muted, sinceOpen:S.sinceOpen, nextOpen:S.nextOpen, goldOpens:S.goldOpens, skin:S.skin, skins:S.skins, qDay:S.qDay, qTap:S.qTap, qBuy:S.qBuy, qOpen:S.qOpen, qCombo:S.qCombo, qClaim:S.qClaim, streak:S.streak, streakDay:S.streakDay, turboUntil:S.turboUntil, turboDay:S.turboDay, fillDay:S.fillDay }
     };
     fetch(API + '/sync', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) })
       .then(function(r){ return r.json(); })
