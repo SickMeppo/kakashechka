@@ -920,7 +920,8 @@
   function appRect(){ return document.getElementById('app').getBoundingClientRect(); }
 
   function tapPoop(e){
-    if (S.energy < 1){
+    if (Math.floor(S.energy) < 1){
+      S.energy = Math.max(0, S.energy);
       poop.classList.add('off');
       applySkinClass();
       hint.textContent = 'Кишечник пуст — энергия восстановится сама';
@@ -944,7 +945,7 @@
 
     var crit = Math.random() < (0.05 * (S.critL || 0));
     var gain = Math.max(1, Math.round(perTap() * mult * (crit ? 3 : 1) * (turboOn() ? 2 : 1)));
-    S.coins += gain; S.energy -= 1; S.taps++; S.sinceOpen++;
+    S.coins += gain; S.energy = Math.max(0, S.energy - 1); S.taps++; S.sinceOpen++;
     S.qTap = (S.qTap || 0) + 1;
     if (streak >= 10) S.qCombo = 1;
 
@@ -1131,8 +1132,17 @@
   }
   function applyRemote(st){
     if (!st) return;
+    var localAhead = (S.taps || 0) > (st.taps || 0);
+    var progress = {
+      coins:1, tapL:1, enL:1, autoL:1, critL:1, regenL:1, energy:1, taps:1,
+      sinceOpen:1, nextOpen:1, goldOpens:1, skin:1, skins:1,
+      qDay:1, qTap:1, qBuy:1, qOpen:1, qCombo:1, qClaim:1,
+      streak:1, streakDay:1, turboUntil:1, turboDay:1, fillDay:1
+    };
     ['coins','tapL','enL','autoL','critL','regenL','energy','taps','muted','sinceOpen','nextOpen','friends','goldOpens','skin','skins','qDay','qTap','qBuy','qOpen','qCombo','qClaim','streak','streakDay','turboUntil','turboDay','fillDay'].forEach(function(k){
-      if (st[k] !== undefined) S[k] = st[k];
+      if (st[k] === undefined) return;
+      if (localAhead && progress[k]) return;
+      S[k] = st[k];
     });
     render();
   }
@@ -1149,6 +1159,8 @@
       .then(function(r){ return r.json(); })
       .then(function(j){
         if (!j || !j.ok) return;
+        var ahead = j.state && (S.taps || 0) > (j.state.taps || 0);
+        if (j.dailyGranted && ahead) S.coins += j.dailyGranted;
         applyRemote(j.state);
         if (j.dailyGranted) toast('Дневная какашка +' + j.dailyGranted);
         drawBoard(j.board);
@@ -1167,7 +1179,7 @@
   })();
 
   /* test handles */
-  window.__test = { state:S, render:render, tap:tapPoop, save:save };
+  window.__test = { state:S, render:render, tap:tapPoop, save:save, applyRemote:applyRemote };
   window.__verify = function(){
     var r = [];
     r.push(['монеты ≥ 0', S.coins >= 0, 'coins=' + fmt(S.coins)]);
