@@ -1333,6 +1333,12 @@
 
   function saveLocal(){ try { S.lastSeen = Date.now(); localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){} }
   var syncing = false;
+  var cloudDown = false;
+  function cloudFail(){
+    if (cloudDown) return;
+    cloudDown = true;
+    toast('облако молчит, прогресс на этом телефоне');
+  }
   function drawBoard(rows){
     var el = $('#boardList'); if (!el) return;
     if (!rows || !rows.length) { el.textContent = 'Пока пусто — зайди из Telegram.'; return; }
@@ -1373,10 +1379,13 @@
       state: { coins:S.coins, tapL:S.tapL, enL:S.enL, autoL:S.autoL, critL:S.critL, regenL:S.regenL, energy:S.energy, taps:S.taps, muted:S.muted, sinceOpen:S.sinceOpen, nextOpen:S.nextOpen, goldOpens:S.goldOpens, skin:S.skin, skins:S.skins, qDay:S.qDay, qTap:S.qTap, qBuy:S.qBuy, qOpen:S.qOpen, qCombo:S.qCombo, qFood:S.qFood, qMix:S.qMix, qRecipe:S.qRecipe, qClaim:S.qClaim, streak:S.streak, streakDay:S.streakDay, turboUntil:S.turboUntil, turboDay:S.turboDay, fillDay:S.fillDay, foods:S.foods, found:S.found, plate:S.plate, mixId:S.mixId, mixUntil:S.mixUntil }
     };
     fetch(API + '/sync', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) })
-      .then(function(r){ return r.json(); })
+      .then(function(r){
+        if (!r.ok) throw new Error('http');
+        return r.json();
+      })
       .then(function(j){
-        if (!j || !j.ok) return;
-        var ahead = j.state && isAhead(S, j.state);
+        if (!j || !j.ok) { cloudFail(); return; }
+        cloudDown = false;
         var remoteAhead = j.state && isAhead(j.state, S);
         if (j.dailyGranted && !remoteAhead) S.coins += j.dailyGranted;
         applyRemote(j.state);
@@ -1384,7 +1393,7 @@
         drawBoard(j.board);
         saveLocal();
       })
-      .catch(function(){})
+      .catch(function(){ cloudFail(); })
       .then(function(){ syncing = false; });
   }
   function save(){ saveLocal(); serverSync(); }
