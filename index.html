@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ru" data-pin="tg-lock-v1">
+<html lang="ru" data-pin="tg-lock-v1" data-fridge="v1">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
@@ -363,6 +363,7 @@
     flex:none; border:none; cursor:pointer; border-radius:11px; padding:10px 12px;
     font-family:'Unbounded'; font-weight:700; font-size:11px; color:var(--goldink);
     background:linear-gradient(180deg,var(--gold2),var(--gold));
+    min-height:44px; min-width:44px;
   }
   .qrow .claim:disabled{ background:var(--surface2); color:var(--muted); }
   .skingrid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; padding:8px 16px 18px; }
@@ -378,6 +379,42 @@
   .skin:disabled{ opacity:.45; cursor:default; }
   .streak{ margin:8px 16px; padding:10px 14px; border-radius:13px; background:var(--surface); border:1px solid var(--border); font-size:13px; color:var(--muted); }
   .streak b{ color:var(--gold); }
+  /* fridge-v1 */
+  .fridge{
+    display:grid; grid-template-columns:repeat(3,1fr); gap:8px;
+    padding:8px 16px 10px;
+  }
+  .food{
+    min-height:72px; border:1px solid var(--border); background:var(--surface); color:var(--ink);
+    border-radius:14px; cursor:pointer; padding:8px 6px; text-align:center;
+    font-weight:800; font-size:12px;
+  }
+  .food .fico{ display:block; font-size:22px; line-height:1.15; }
+  .food small{ display:block; font-weight:600; color:var(--muted); margin-top:3px; font-size:10px; }
+  .food.on{ border-color:var(--gold); color:var(--gold); }
+  .food.have{ background:var(--surface2); }
+  .food:disabled{ opacity:.45; cursor:default; }
+  .plate{
+    margin:4px 16px 8px; display:flex; align-items:center; gap:8px;
+  }
+  .slot{
+    flex:1; min-height:52px; border:1.5px dashed var(--border); border-radius:14px;
+    background:var(--surface); color:var(--muted); font-weight:800; font-size:12px;
+    display:flex; align-items:center; justify-content:center; cursor:pointer; padding:8px;
+  }
+  .slot.full{ border-style:solid; border-color:var(--gold); color:var(--ink); }
+  #mixBtn{
+    flex:none; min-width:88px; min-height:52px; border:none; border-radius:14px; cursor:pointer;
+    font-family:'Unbounded'; font-weight:800; font-size:11px; color:var(--goldink);
+    background:linear-gradient(180deg,var(--gold2),var(--gold)); padding:8px 10px;
+  }
+  #mixBtn:disabled{ background:var(--surface2); color:var(--muted); }
+  .recipe{
+    padding:10px 16px; border-top:1px solid var(--border);
+  }
+  .recipe .t{ font-weight:800; font-size:14px; }
+  .recipe .d{ font-size:12px; color:var(--muted); margin-top:2px; }
+  .recipe.on .t{ color:var(--gold); }
 
   /* ---------- poop grown overlay ---------- */
   #openOverlay{
@@ -449,6 +486,7 @@
     <div class="hudsub">
       <span><b id="perTap">+2</b> за тап</span>
       <span id="cpsWrap"><b id="cps">0</b>/сек заражение</span>
+      <span id="mixHud" style="display:none"><b id="mixHudN"></b></span>
     </div>
     <div class="energy">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--gold)"><polygon points="13 2 3 14 11 14 9 22 19 10 12 10 13 2"/></svg>
@@ -472,9 +510,9 @@
           <span class="dtime">скоро</span>
         </button>
         <button type="button" class="dailytile" id="dailyCombo">
-          <span class="dico">🃏</span>
-          <span class="dname">Комбо</span>
-          <span class="dtime">скоро</span>
+          <span class="dico">🍽️</span>
+          <span class="dname">Набор</span>
+          <span class="dtime" id="dailyComboT">смешай</span>
         </button>
       </div>
       <div class="combo" id="comboBadge">КОМБО ×1.5</div>
@@ -522,6 +560,18 @@
         <div class="streak">Стрик <b id="streakN">0</b> дн. · заход сегодня даёт какоины</div>
         <div class="scr-sub">Задания сбрасываются в полночь UTC.</div>
         <div id="questList"></div>
+        <div class="scr-title">Холодильник</div>
+        <div class="scr-sub">Купи еду. Положи два на тарелку. Что дружит — не скажем.</div>
+        <div class="fridge" id="fridge"></div>
+        <div class="plate">
+          <button type="button" class="slot" id="slot0">пусто</button>
+          <button type="button" class="slot" id="slot1">пусто</button>
+          <button type="button" id="mixBtn">Смешать</button>
+        </div>
+        <div class="scr-sub" id="mixStatus">Набор действует до полуночи UTC.</div>
+        <div class="scr-title">Секретные наборы</div>
+        <div class="scr-sub">Открытый набор видно. Закрытый — ???</div>
+        <div id="recipeList"></div>
         <div class="scr-title">Коллекция</div>
         <div class="scr-sub">Открыл — носи. Это не магазин Stars.</div>
         <div class="skingrid" id="skinGrid"></div>
@@ -631,16 +681,48 @@
 
   /* ---------- state ---------- */
   var KEY = 'poop_clicker_v1';
-  var DEF = { coins:0, tapL:0, enL:0, autoL:0, critL:0, regenL:0, energy:100, muted:false, taps:0, sinceOpen:0, nextOpen: 20 + Math.floor(Math.random()*16), lastSeen: Date.now(), friends:0, goldOpens:0, skin:'basic', skins:['basic'], qDay:'', qTap:0, qBuy:0, qOpen:0, qCombo:0, qClaim:{}, streak:0, streakDay:'', turboUntil:0, turboDay:'', fillDay:'' };
+  var DEF = { coins:0, tapL:0, enL:0, autoL:0, critL:0, regenL:0, energy:100, muted:false, taps:0, sinceOpen:0, nextOpen: 20 + Math.floor(Math.random()*16), lastSeen: Date.now(), friends:0, goldOpens:0, skin:'basic', skins:['basic'], qDay:'', qTap:0, qBuy:0, qOpen:0, qCombo:0, qFood:0, qMix:0, qRecipe:0, qClaim:{}, streak:0, streakDay:'', turboUntil:0, turboDay:'', fillDay:'', foods:[], found:[], plate:[], mixId:'', mixUntil:0 };
   var S;
   try { S = Object.assign({}, DEF, JSON.parse(localStorage.getItem(KEY) || '{}')); }
   catch(e){ S = Object.assign({}, DEF); }
+  if (!Array.isArray(S.foods)) S.foods = [];
+  if (!Array.isArray(S.found)) S.found = [];
+  if (!Array.isArray(S.plate)) S.plate = [];
+
+  var FOODS = [
+    { id:'milk', name:'Молоко', ico:'🥛', cost:40 },
+    { id:'cuke', name:'Огурцы', ico:'🥒', cost:35 },
+    { id:'seeds', name:'Семечки', ico:'🌻', cost:25 },
+    { id:'garlic', name:'Чеснок', ico:'🧄', cost:30 },
+    { id:'kefir', name:'Кефир', ico:'🍶', cost:50 },
+    { id:'cola', name:'Кола', ico:'🥤', cost:55 },
+    { id:'herring', name:'Селёдка', ico:'🐟', cost:90 },
+    { id:'beer', name:'Пиво', ico:'🍺', cost:80 },
+    { id:'pelmeni', name:'Пельмени', ico:'🥟', cost:70 },
+    { id:'melon', name:'Арбуз', ico:'🍉', cost:65 },
+    { id:'shashlik', name:'Шашлык', ico:'🍖', cost:140 },
+    { id:'vodka', name:'Водка', ico:'🥃', cost:160 }
+  ];
+  var RECIPES = [
+    { id:'village', a:'milk', b:'cuke', name:'Деревенский взрыв', d:'тап ×2 до полуночи', tap:2 },
+    { id:'grandpa', a:'herring', b:'milk', name:'Закуска от деда', d:'энергия быстрее', regen:400 },
+    { id:'bench', a:'beer', b:'seeds', name:'Лавочка', d:'муха +2/сек', auto:2 },
+    { id:'baba', a:'kefir', b:'garlic', name:'Бабушкин курс', d:'+40 к напору', en:40 },
+    { id:'dorm', a:'cola', b:'pelmeni', name:'Общага', d:'крит с тапа', crit:0.12 },
+    { id:'dacha', a:'vodka', b:'melon', name:'Дачный закат', d:'чаще золотая', gold:0.20 }
+  ];
+  var MIX_FAIL = ['Мимо. Какашечка молчит.','Не дружит. Даже муха отвернулась.','Так себе тарелка.','Кишечник сказал нет.','Ничего. Пробуй другую пару.'];
+  function foodById(id){ for (var i=0;i<FOODS.length;i++) if (FOODS[i].id===id) return FOODS[i]; return null; }
+  function hasFood(id){ return (S.foods||[]).indexOf(id) >= 0; }
+  function findRecipe(a,b){
+    for (var i=0;i<RECIPES.length;i++){
+      var r = RECIPES[i];
+      if ((r.a===a && r.b===b) || (r.a===b && r.b===a)) return r;
+    }
+    return null;
+  }
 
   /* формулы */
-  function perTap(){ return (2 + S.tapL) * (1 + 0.25 * S.friends); }
-  function maxEnergy(){ return 100 + 20 * S.enL; }
-  function autoPerSec(){ return S.autoL; }
-  function regenMs(){ return Math.max(700, 1500 - 80 * (S.regenL || 0)); }
   function todayUTC(){ return new Date().toISOString().slice(0,10); }
   function pad2(n){ return (n < 10 ? '0' : '') + n; }
   function utcLeft(){
@@ -649,7 +731,26 @@
     var s = Math.max(0, Math.floor((end - n.getTime()) / 1000));
     return pad2(Math.floor(s / 3600)) + ':' + pad2(Math.floor((s % 3600) / 60));
   }
+  function utcDayEnd(){
+    var n = new Date();
+    return Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate() + 1);
+  }
   function turboOn(){ return Date.now() < (S.turboUntil || 0); }
+  function activeMix(){
+    if (!S.mixId || Date.now() >= (S.mixUntil || 0)) return null;
+    for (var i=0;i<RECIPES.length;i++) if (RECIPES[i].id === S.mixId) return RECIPES[i];
+    return null;
+  }
+  function perTap(){
+    var m = activeMix();
+    return (2 + S.tapL) * (1 + 0.25 * S.friends) * (m && m.tap ? m.tap : 1);
+  }
+  function maxEnergy(){ return 100 + 20 * S.enL + ((activeMix() && activeMix().en) || 0); }
+  function autoPerSec(){ return S.autoL + ((activeMix() && activeMix().auto) || 0); }
+  function regenMs(){
+    var cut = (activeMix() && activeMix().regen) || 0;
+    return Math.max(400, 1500 - 80 * (S.regenL || 0) - cut);
+  }
   var RANKS = [
     [0, 'Засор'],
     [50, 'Запах в подъезде'],
@@ -666,7 +767,7 @@
   }
   function ensureQuests(){
     var d = todayUTC();
-    if (S.qDay !== d){ S.qDay = d; S.qTap=0; S.qBuy=0; S.qOpen=0; S.qCombo=0; S.qClaim={}; }
+    if (S.qDay !== d){ S.qDay = d; S.qTap=0; S.qBuy=0; S.qOpen=0; S.qCombo=0; S.qFood=0; S.qMix=0; S.qRecipe=0; S.qClaim={}; }
     if (!S.qClaim || typeof S.qClaim !== 'object') S.qClaim = {};
     if (!S.skins || !S.skins.length) S.skins = ['basic'];
   }
@@ -739,6 +840,13 @@
     $('#cps').textContent = fmt(autoPerSec());
     var ot = $('#outbreakTitle'); if (ot) ot.textContent = outbreakTitle();
     var drt = $('#dailyRewardT'); if (drt) drt.textContent = utcLeft();
+    var mx = activeMix();
+    var mh = $('#mixHud'), mhn = $('#mixHudN'), dct = $('#dailyComboT');
+    if (mh){
+      mh.style.display = mx ? '' : 'none';
+      if (mhn) mhn.textContent = mx ? mx.name : '';
+    }
+    if (dct) dct.textContent = mx ? mx.name.split(' ')[0] : 'смешай';
     var tb = $('#boostTurbo'), tl = $('#turboLeft');
     if (tb){
       var tOn = turboOn();
@@ -782,10 +890,11 @@
     applySkinClass();
   }
   var QUESTS = [
-    { id:'tap', name:'Тапни 50 раз', need:50, key:'qTap', rew:80 },
-    { id:'buy', name:'Купи улучшение', need:1, key:'qBuy', rew:50 },
-    { id:'open', name:'Открой какашку', need:1, key:'qOpen', rew:120 },
-    { id:'combo', name:'Серия 10 тапов', need:1, key:'qCombo', rew:60 }
+    { id:'tap', name:'Натопчи 80 раз', need:80, key:'qTap', rew:100 },
+    { id:'food', name:'Купи еду в холодильник', need:1, key:'qFood', rew:70 },
+    { id:'open', name:'Вырасти какашку', need:1, key:'qOpen', rew:120 },
+    { id:'mix', name:'Смешай два продукта', need:1, key:'qMix', rew:80 },
+    { id:'recipe', name:'Собери секретный набор', need:1, key:'qRecipe', rew:200 }
   ];
   var SKIN_ART = {
     basic:'img/basic.png', gold:'img/gold.png', spicy:'img/spicy.png',
@@ -845,6 +954,46 @@
           + '<span class="skinlab">'+sk.name+'<small>'+(own?'надеть':sk.how)+'</small></span></button>';
       });
       sg.innerHTML = hs;
+    }
+    renderFridge();
+  }
+  function renderFridge(){
+    var fr = $('#fridge');
+    if (fr){
+      var hf = '';
+      for (var i=0;i<FOODS.length;i++){
+        var f = FOODS[i], own = hasFood(f.id), onp = (S.plate||[]).indexOf(f.id)>=0;
+        hf += '<button type="button" class="food'+(own?' have':'')+(onp?' on':'')+'" data-food="'+f.id+'">'
+          + '<span class="fico">'+f.ico+'</span>'+f.name
+          + '<small>'+(own ? (onp ? 'на тарелке' : 'есть') : fmt(f.cost))+'</small></button>';
+      }
+      fr.innerHTML = hf;
+    }
+    var p = S.plate || [];
+    function slotHtml(i){
+      var el = document.getElementById('slot'+i); if (!el) return;
+      var f = p[i] ? foodById(p[i]) : null;
+      el.textContent = f ? (f.ico+' '+f.name) : 'пусто';
+      el.classList.toggle('full', !!f);
+    }
+    slotHtml(0); slotHtml(1);
+    var mb = $('#mixBtn'); if (mb) mb.disabled = p.length !== 2;
+    var st = $('#mixStatus');
+    if (st){
+      var am = activeMix();
+      st.textContent = am ? (am.name + ' · до полуночи UTC') : 'Набор действует до полуночи UTC.';
+    }
+    var rl = $('#recipeList');
+    if (rl){
+      var hr = '';
+      for (var j=0;j<RECIPES.length;j++){
+        var rec = RECIPES[j], known = (S.found||[]).indexOf(rec.id)>=0;
+        var live = !!(activeMix() && activeMix().id === rec.id);
+        var fa = foodById(rec.a), fb = foodById(rec.b);
+        hr += '<div class="recipe'+(live?' on':'')+'"><div class="t">'+(known ? rec.name : '???')+'</div>'
+          + '<div class="d">'+(known ? ((fa?fa.name:'?')+' + '+(fb?fb.name:'?')+' · '+rec.d) : 'ещё не смешали')+'</div></div>';
+      }
+      rl.innerHTML = hr;
     }
   }
   function bumpCoins(){
@@ -946,7 +1095,8 @@
     clearTimeout(comboTimer);
     comboTimer = setTimeout(function(){ poopWrap.classList.remove('hot'); comboBadge.classList.remove('on'); }, 700);
 
-    var crit = Math.random() < (0.05 * (S.critL || 0));
+    var critP = (0.05 * (S.critL || 0)) + ((activeMix() && activeMix().crit) || 0);
+    var crit = Math.random() < critP;
     var gain = Math.max(1, Math.round(perTap() * mult * (crit ? 3 : 1) * (turboOn() ? 2 : 1)));
     S.coins += gain; S.energy = Math.max(0, S.energy - 1); S.taps++; S.sinceOpen++;
     S.qTap = (S.qTap || 0) + 1;
@@ -987,7 +1137,7 @@
   function doOpen(){
     S.sinceOpen = 0;
     S.nextOpen = 20 + Math.floor(Math.random() * 16);
-    var golden = Math.random() < 0.12;
+    var golden = Math.random() < (0.12 + ((activeMix() && activeMix().gold) || 0));
     if (golden) S.goldOpens = (S.goldOpens || 0) + 1;
     S.qOpen = (S.qOpen || 0) + 1;
     var reward = Math.round((60 + 30 * S.tapL) * (1 + 0.25 * S.friends) * (golden ? 10 : 1));
@@ -1034,6 +1184,61 @@
     S.skin = b.dataset.skin; render(); save();
   });
 
+  function buyFood(id){
+    var f = foodById(id); if (!f) return false;
+    if (hasFood(id)) return true;
+    if (S.coins < f.cost){ toast('Мало какоинов'); return false; }
+    S.coins -= f.cost;
+    S.foods.push(id);
+    S.qFood = (S.qFood || 0) + 1;
+    return true;
+  }
+  function togglePlate(id){
+    if (!hasFood(id)){
+      if (!buyFood(id)) { haptic('light'); render(); return; }
+      snd.buy(); haptic('success'); bumpCoins();
+    }
+    var p = (S.plate || []).slice();
+    var ix = p.indexOf(id);
+    if (ix >= 0) p.splice(ix, 1);
+    else {
+      if (p.length >= 2) p.shift();
+      p.push(id);
+    }
+    S.plate = p;
+    render(); save();
+  }
+  function mixNow(){
+    var p = S.plate || [];
+    S.qMix = (S.qMix || 0) + 1;
+    if (p.length !== 2){ toast('Два продукта на тарелку'); render(); save(); return false; }
+    if (!hasFood(p[0]) || !hasFood(p[1])){ toast('Сначала купи оба'); return false; }
+    var rec = findRecipe(p[0], p[1]);
+    if (!rec){
+      toast(MIX_FAIL[Math.floor(Math.random() * MIX_FAIL.length)]);
+      snd.thud(); haptic('light'); render(); save();
+      return false;
+    }
+    var first = (S.found || []).indexOf(rec.id) < 0;
+    if (first){
+      S.found.push(rec.id);
+      S.qRecipe = (S.qRecipe || 0) + 1;
+      S.coins += 80;
+    }
+    S.mixId = rec.id;
+    S.mixUntil = utcDayEnd();
+    toast(first ? ('НАБОР: ' + rec.name) : (rec.name + ' до полуночи'));
+    snd.open(); haptic('success'); bumpCoins(); render(); save();
+    return true;
+  }
+  document.getElementById('fridge').addEventListener('click', function(e){
+    var b = e.target.closest('.food'); if (!b) return;
+    togglePlate(b.dataset.food);
+  });
+  document.getElementById('slot0').addEventListener('click', function(){ if ((S.plate||[])[0]) { S.plate.splice(0,1); render(); } });
+  document.getElementById('slot1').addEventListener('click', function(){ if ((S.plate||[])[1]) { S.plate.splice(1,1); render(); } });
+  document.getElementById('mixBtn').addEventListener('click', mixNow);
+
   /* ---------- pack ---------- */
   function refLink(){
     var uid = tgUser ? tgUser.id : 'demo';
@@ -1078,7 +1283,9 @@
     document.querySelectorAll('.screen').forEach(function(x){ x.classList.remove('on'); });
     document.querySelector('.tab[data-scr="scr-job"]').classList.add('on');
     document.getElementById('scr-job').classList.add('on');
-    toast('Комбо дня — следующая волна'); haptic('light');
+    var fr = $('#fridge');
+    if (fr && fr.scrollIntoView) try { fr.scrollIntoView({ block:'start' }); } catch(e){}
+    haptic('light');
   });
 
   /* ---------- tabs ---------- */
@@ -1139,10 +1346,11 @@
     var progress = {
       coins:1, tapL:1, enL:1, autoL:1, critL:1, regenL:1, energy:1, taps:1,
       sinceOpen:1, nextOpen:1, goldOpens:1, skin:1, skins:1,
-      qDay:1, qTap:1, qBuy:1, qOpen:1, qCombo:1, qClaim:1,
-      streak:1, streakDay:1, turboUntil:1, turboDay:1, fillDay:1
+      qDay:1, qTap:1, qBuy:1, qOpen:1, qCombo:1, qFood:1, qMix:1, qRecipe:1, qClaim:1,
+      streak:1, streakDay:1, turboUntil:1, turboDay:1, fillDay:1,
+      foods:1, found:1, plate:1, mixId:1, mixUntil:1
     };
-    ['coins','tapL','enL','autoL','critL','regenL','energy','taps','muted','sinceOpen','nextOpen','friends','goldOpens','skin','skins','qDay','qTap','qBuy','qOpen','qCombo','qClaim','streak','streakDay','turboUntil','turboDay','fillDay'].forEach(function(k){
+    ['coins','tapL','enL','autoL','critL','regenL','energy','taps','muted','sinceOpen','nextOpen','friends','goldOpens','skin','skins','qDay','qTap','qBuy','qOpen','qCombo','qFood','qMix','qRecipe','qClaim','streak','streakDay','turboUntil','turboDay','fillDay','foods','found','plate','mixId','mixUntil'].forEach(function(k){
       if (st[k] === undefined) return;
       if (localAhead && progress[k]) return;
       S[k] = st[k];
@@ -1156,7 +1364,7 @@
     var payload = {
       initData: tg.initData,
       startParam: startParam,
-      state: { coins:S.coins, tapL:S.tapL, enL:S.enL, autoL:S.autoL, critL:S.critL, regenL:S.regenL, energy:S.energy, taps:S.taps, muted:S.muted, sinceOpen:S.sinceOpen, nextOpen:S.nextOpen, goldOpens:S.goldOpens, skin:S.skin, skins:S.skins, qDay:S.qDay, qTap:S.qTap, qBuy:S.qBuy, qOpen:S.qOpen, qCombo:S.qCombo, qClaim:S.qClaim, streak:S.streak, streakDay:S.streakDay, turboUntil:S.turboUntil, turboDay:S.turboDay, fillDay:S.fillDay }
+      state: { coins:S.coins, tapL:S.tapL, enL:S.enL, autoL:S.autoL, critL:S.critL, regenL:S.regenL, energy:S.energy, taps:S.taps, muted:S.muted, sinceOpen:S.sinceOpen, nextOpen:S.nextOpen, goldOpens:S.goldOpens, skin:S.skin, skins:S.skins, qDay:S.qDay, qTap:S.qTap, qBuy:S.qBuy, qOpen:S.qOpen, qCombo:S.qCombo, qFood:S.qFood, qMix:S.qMix, qRecipe:S.qRecipe, qClaim:S.qClaim, streak:S.streak, streakDay:S.streakDay, turboUntil:S.turboUntil, turboDay:S.turboDay, fillDay:S.fillDay, foods:S.foods, found:S.found, plate:S.plate, mixId:S.mixId, mixUntil:S.mixUntil }
     };
     fetch(API + '/sync', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) })
       .then(function(r){ return r.json(); })
@@ -1182,7 +1390,7 @@
   })();
 
   /* test handles */
-  window.__test = { state:S, render:render, tap:tapPoop, save:save, applyRemote:applyRemote };
+  window.__test = { state:S, render:render, tap:tapPoop, save:save, applyRemote:applyRemote, buyFood:buyFood, mix:mixNow };
   window.__verify = function(){
     var r = [];
     r.push(['монеты ≥ 0', S.coins >= 0, 'coins=' + fmt(S.coins)]);
