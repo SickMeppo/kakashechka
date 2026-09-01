@@ -1,3 +1,0 @@
-# КАКАШЕЧКА
-
-Telegram Mini App.
