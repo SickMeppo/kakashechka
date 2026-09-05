@@ -1,10 +1,11 @@
 <!doctype html>
-<html lang="ru" data-pin="tg-lock-v1" data-fridge="v1" data-mod="v1">
+<html lang="ru" data-pin="tg-lock-v1" data-fridge="v1" data-mod="v1" data-day="v1" data-layout="fill-v1">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#d7ece8">
-<title>КАКАШЕЧКА — кликер</title>
+<title>КАКАШЕЧКА</title>
+<link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTQiIGZpbGw9IiNkN2VjZTgiLz48cGF0aCBkPSJNMTggNDVjMC04IDYtMTIgMTQtMTItNS0yLTctNy00LTExIDQgNCAxMSA1IDE0IDEyIDYgMiA5IDYgOSAxMkgxOHoiIGZpbGw9IiM2YjM1MTgiLz48Y2lyY2xlIGN4PSIyOSIgY3k9IjQyIiByPSIyIiBmaWxsPSIjZmZmOGVmIi8+PGNpcmNsZSBjeD0iNDEiIGN5PSI0MiIgcj0iMiIgZmlsbD0iI2ZmZjhlZiIvPjwvc3ZnPg==">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,7 +15,7 @@
 <body>
 
 <div class="bgpat"></div>
-<div id="app">
+<div id="app" data-screen="scr-tap">
 
   <header data-fit="s25-header-fit">
     <div class="logo"><b>КАКАШЕЧКА</b><i></i></div>
@@ -34,7 +35,7 @@
       <span id="cpsWrap"><b id="cps">0</b>/сек заражение</span>
       <span id="mixHud" style="display:none"><b id="mixHudN"></b></span>
     </div>
-    <div class="energy">
+    <div class="energy" role="progressbar" aria-label="Энергия" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100" aria-valuetext="100 из 100">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="var(--gold)"><polygon points="13 2 3 14 11 14 9 22 19 10 12 10 13 2"/></svg>
       <div class="ebar"><i id="energyFill"></i></div>
       <span id="energyTxt">100/100</span>
@@ -43,24 +44,8 @@
 
   <main>
     <!-- ТАПАТЬ -->
-    <section class="screen on" id="scr-tap">
-      <div class="dailystrip">
-        <button type="button" class="dailytile" id="dailyReward">
-          <span class="dico">🎁</span>
-          <span class="dname">Награда</span>
-          <span class="dtime" id="dailyRewardT">--:--</span>
-        </button>
-        <button type="button" class="dailytile" id="dailyCipher">
-          <span class="dico">🔐</span>
-          <span class="dname">Шифр</span>
-          <span class="dtime">скоро</span>
-        </button>
-        <button type="button" class="dailytile" id="dailyCombo">
-          <span class="dico">🍽️</span>
-          <span class="dname">Набор</span>
-          <span class="dtime" id="dailyComboT">смешай</span>
-        </button>
-      </div>
+    <section class="screen on" id="scr-tap" aria-hidden="false" aria-labelledby="tapHeading">
+      <h1 class="visually-hidden" id="tapHeading" tabindex="-1">Тапать</h1>
       <div class="combo" id="comboBadge">КОМБО ×1.5</div>
       <div class="poopwrap" id="poopWrap" data-fx="alive-v2">
         <div class="spot"></div>
@@ -80,56 +65,93 @@
         </div>
         <div class="comboring"></div>
         <button id="poop" aria-label="Тапнуть по какашечке">
-          <img id="poopArt" src="img/basic.png" alt="">
+          <img id="poopArt" src="img/basic.webp" alt="">
+        </button>
+      </div>
+      <div class="hint" id="hint">Тапай по какашечке</div>
+      <div class="nextgoal" id="nextGoal">
+        <div class="goalcopy">
+          <span class="goalkicker">СЛЕДОМ</span>
+          <b id="nextGoalLabel">Ещё 25 до Фастфуда</b>
+          <span id="nextGoalValue">0 из 25</span>
+        </div>
+        <div class="goaltrack" aria-hidden="true"><i id="nextGoalFill"></i></div>
+        <button type="button" id="nextGoalAction">Прокачка</button>
+      </div>
+      <div class="dailystrip" role="group" aria-label="Сегодня">
+        <span class="todaylabel">Сегодня</span>
+        <div class="dailytile" id="dailyReward" role="status">
+          <span class="dico">+40</span>
+          <span class="dname">Награда</span>
+          <span class="dtime" id="dailyRewardT">авто</span>
+        </div>
+        <button type="button" class="dailytile" id="dailyCipher">
+          <span class="dico">АБ</span>
+          <span class="dname">Шифр</span>
+          <span class="dtime" id="dailyCipherT">дверца</span>
+        </button>
+        <button type="button" class="dailytile" id="dailyCombo">
+          <span class="dico">2×</span>
+          <span class="dname">Набор</span>
+          <span class="dtime" id="dailyComboT">смешай</span>
         </button>
       </div>
       <div class="boosts">
         <button type="button" class="boost" id="boostTurbo">Турбо ×2<small id="turboLeft">1/день</small></button>
-        <button type="button" class="boost" id="boostFill">Напор<small id="fillLeft">фулл энергия</small></button>
+        <button type="button" class="boost" id="boostFill">Напор<small id="fillLeft">полная</small></button>
       </div>
-      <div class="hint" id="hint">Тапай по какашечке</div>
     </section>
 
     <!-- ПРОКАЧКА -->
-    <section class="screen" id="scr-up">
+    <section class="screen" id="scr-up" aria-hidden="true" aria-labelledby="upHeading">
       <div class="scr-pad">
-        <div class="scr-title">Прокачка</div>
-        <div class="scr-sub">Корми и качай — какашечка растёт.</div>
+        <h2 class="scr-title" id="upHeading" tabindex="-1">Прокачка</h2>
+        <div class="scr-sub">жратва, кишечник, муха</div>
         <div id="upList"></div>
-      </div>
-    </section>
-
-    <!-- ДЕЛО -->
-    <section class="screen" id="scr-job">
-      <div class="scr-pad">
-        <div class="scr-title">Дело</div>
-        <div class="streak">Стрик <b id="streakN">0</b> дн. · заход сегодня даёт какоины</div>
-        <div class="scr-sub">Задания сбрасываются в полночь UTC.</div>
-        <div id="questList"></div>
-        <div class="scr-title">Холодильник</div>
-        <div class="scr-sub">Купи еду. Положи два на тарелку. Что дружит — не скажем.</div>
-        <div class="fridge" id="fridge"></div>
-        <div class="plate">
-          <button type="button" class="slot" id="slot0">пусто</button>
-          <button type="button" class="slot" id="slot1">пусто</button>
-          <button type="button" id="mixBtn">Смешать</button>
-        </div>
-        <div class="scr-sub" id="mixStatus">Набор действует до полуночи UTC.</div>
-        <div class="scr-title">Секретные наборы</div>
-        <div class="scr-sub">Открытый набор видно. Закрытый — ???</div>
-        <div id="recipeList"></div>
-        <div class="scr-title">Коллекция</div>
-        <div class="scr-sub">Открыл — носи. Это не магазин Stars.</div>
+        <h3 class="scr-title section-title">Коллекция</h3>
+        <div class="scr-sub">выбери морду</div>
         <div class="skingrid" id="skinGrid"></div>
       </div>
     </section>
 
-    <!-- СТАЯ -->
-    <section class="screen" id="scr-team">
+    <!-- ДЕЛО -->
+    <section class="screen" id="scr-job" aria-hidden="true" aria-labelledby="jobHeading">
       <div class="scr-pad">
-        <div class="scr-title">Стая</div>
+        <div class="jobhead">
+          <div><h2 class="scr-title" id="jobHeading" tabindex="-1">Дело</h2><div class="scr-sub">на сегодня</div></div>
+          <div class="streak"><b id="streakN">0</b> дн. подряд</div>
+        </div>
+        <details class="jobdrawer" id="questDrawer">
+          <summary><span>Задания</span><b id="questReady">0 готово</b></summary>
+          <div id="questList"></div>
+        </details>
+        <h3 class="scr-title section-title">Тарелка</h3>
+        <div class="scr-sub">выбери два продукта</div>
+        <div class="plateboard">
+          <div class="plate">
+            <button type="button" class="slot" id="slot0">пусто</button>
+            <button type="button" class="slot" id="slot1">пусто</button>
+          </div>
+          <button type="button" id="mixBtn">Смешать</button>
+          <div class="mixstatus" id="mixStatus" role="status">набор живёт до утра</div>
+        </div>
+        <h3 class="scr-title">Холодильник</h3>
+        <div class="scr-sub">сначала купи, потом выбери</div>
+        <div class="fridge" id="fridge"></div>
+        <details class="jobdrawer recipe-drawer" id="recipeDrawer">
+          <summary><span>Секретные наборы</span><b id="recipeFound">0 открыто</b></summary>
+          <div class="scr-sub">пока ???</div>
+          <div id="recipeList"></div>
+        </details>
+      </div>
+    </section>
+
+    <!-- СТАЯ -->
+    <section class="screen" id="scr-team" aria-hidden="true" aria-labelledby="teamHeading">
+      <div class="scr-pad">
+        <h2 class="scr-title" id="teamHeading" tabindex="-1">Стая</h2>
         <div class="squad-hero"><span class="n" id="friendsN">0</span><span class="lbl">друзей<br>в стае</span></div>
-        <div class="bonusline">За каждого друга в стае — <b>+25% к силе тапа</b> навсегда.</div>
+        <div class="bonusline">за друга в стае — <b>+25% к тапу</b></div>
         <button class="btn-primary" id="inviteBtn">Позвать в стаю</button>
         <div class="linkrow">
           <span id="refLink">t.me/…</span>
@@ -137,19 +159,19 @@
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
           </button>
         </div>
-        <div class="empty" id="squadEmpty">Пока ты один.<br>Какашечка любит компанию — позови друзей, и каждый поднимет твой тап.</div>
-        <div class="scr-title" style="padding-top:8px">Неделя</div>
-        <div id="boardList" class="scr-sub">Лидерборд — после входа из Telegram.</div>
-        <p class="note">Рефка: друг должен открыть игру по твоей ссылке и тапнуть. Канал: @kakashechka_game</p>
-        <button class="stars-stub" id="starsBtn">Бусты за <b>Telegram Stars</b> — скоро</button>
+        <div class="empty" id="squadEmpty">позови кого-нибудь</div>
+        <h3 class="scr-title" style="padding-top:8px">Неделя</h3>
+        <div id="boardList" class="scr-sub">пока никого</div>
+        <p class="note">друг открыл ссылку и тапнул</p>
+        <button class="stars-stub" id="starsBtn" hidden>за звёзды пока нет</button>
       </div>
     </section>
 
-    <div id="fx"></div>
+    <div id="fx" aria-hidden="true"></div>
   </main>
 
   <nav class="tabbar">
-    <button class="tab on" data-scr="scr-tap" aria-label="Тапать">
+    <button class="tab on" data-scr="scr-tap" aria-label="Тапать" aria-current="page">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><path d="M12 4.5v2M12 17.5v2M4.5 12h2M17.5 12h2M6.7 6.7l1.4 1.4M15.9 15.9l1.4 1.4M17.3 6.7l-1.4 1.4M8.1 15.9l-1.4 1.4"/></svg>
       ТАПАТЬ
     </button>
@@ -160,29 +182,47 @@
     <button class="tab" data-scr="scr-job" aria-label="Дело">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
       ДЕЛО
+      <span class="tabbadge" id="jobBadge" hidden aria-label="Готовые задания">0</span>
     </button>
     <button class="tab" data-scr="scr-team" aria-label="Стая">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="14" rx="5" ry="4"/><circle cx="17.5" cy="9.5" r="2"/><path d="M17 5.5l1.2-1-.3 2.2.8.8-1.6.4"/><path d="M7 4.5Q5 6.5 7 8.5"/><path d="M10 3.5Q7.5 6 10 8.5"/></svg>
       СТАЯ
     </button>
   </nav>
-</div>
 
 <!-- какашечка выросла -->
-<div id="openOverlay" role="dialog" aria-modal="true">
+<div id="openOverlay" role="dialog" aria-modal="true" aria-labelledby="openTag" aria-describedby="openSub" aria-hidden="true">
   <div class="opencard">
     <div class="rays"></div>
     <div class="openpoop">
-      <img id="openArt" class="rise" src="img/basic.png" alt="">
+      <img id="openArt" class="rise" src="img/basic.webp" alt="">
     </div>
     <div class="opentag" id="openTag">КАКАШЕЧКА ВЫРОСЛА</div>
     <div class="openrew" id="openRew">+0</div>
-    <div class="opensub" id="openSub">Забирай и корми дальше — она бесконечная</div>
-    <button class="btn-primary" id="collectBtn">Забрать награду</button>
+    <div class="opensub" id="openSub">ещё вырастет</div>
+    <button type="button" class="btn-primary" id="collectBtn">Продолжить</button>
   </div>
 </div>
 
-<div id="toast"></div>
+<div id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+<div id="dayOverlay" role="dialog" aria-modal="true" aria-labelledby="dayTag" aria-describedby="daySub" aria-hidden="true">
+  <div class="daycard">
+    <button type="button" class="dayx" id="dayClose" aria-label="Закрыть">×</button>
+    <div class="daytag" id="dayTag">ШИФР НА ДВЕРЦЕ</div>
+    <div class="dayscramble" id="dayScramble"></div>
+    <div class="dayguess" id="dayGuess"></div>
+    <div class="dayedit" id="dayEdit">
+      <button type="button" id="dayBack" aria-label="Удалить последнюю букву">Удалить</button>
+      <button type="button" id="dayReset">Сбросить</button>
+    </div>
+    <div class="daykeys" id="dayKeys"></div>
+    <div class="naborbalance" id="naborBalance" role="status" hidden></div>
+    <div class="naborlist" id="naborList"></div>
+    <div class="daysub" id="daySub"></div>
+    <button class="btn-primary" id="dayGo">Открыть</button>
+  </div>
+</div>
+</div>
 <script src="js/boot.js"></script>
 <script src="js/tg.js"></script>
 <script src="js/state.js"></script>

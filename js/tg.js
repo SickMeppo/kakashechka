@@ -8,7 +8,11 @@
     try { if (tg.setBottomBarColor) tg.setBottomBarColor('#c9e0db'); } catch(e){}
     function pinH(){
       var h = Math.round(tg.viewportStableHeight || tg.viewportHeight || window.innerHeight);
-      if (h > 0) document.documentElement.style.setProperty('--app-h', h + 'px');
+      if (h > 0){
+        document.documentElement.style.setProperty('--app-h', h + 'px');
+        var app = document.getElementById('app');
+        if (app) app.style.height = h + 'px';
+      }
     }
     pinH();
     try {
@@ -20,9 +24,8 @@
     document.addEventListener('touchmove', function(e){
       var n = e.target;
       while (n && n !== document.body){
-        if (n.classList && n.classList.contains('scr-pad')){
-          if (n.scrollHeight > n.clientHeight) return;
-        }
+        var scrollableScreen = n.id === 'scr-tap' || (n.classList && n.classList.contains('scr-pad'));
+        if (scrollableScreen && n.scrollHeight > n.clientHeight) return;
         n = n.parentNode;
       }
       e.preventDefault();

@@ -1,6 +1,6 @@
 /* ---------- state ---------- */
   var KEY = 'poop_clicker_v1';
-  var DEF = { coins:0, tapL:0, enL:0, autoL:0, critL:0, regenL:0, energy:100, muted:false, taps:0, sinceOpen:0, nextOpen: 20 + Math.floor(Math.random()*16), lastSeen: Date.now(), friends:0, goldOpens:0, skin:'basic', skins:['basic'], qDay:'', qTap:0, qBuy:0, qOpen:0, qCombo:0, qFood:0, qMix:0, qRecipe:0, qClaim:{}, streak:0, streakDay:'', turboUntil:0, turboDay:'', fillDay:'', foods:[], found:[], plate:[], mixId:'', mixUntil:0 };
+  var DEF = { coins:0, tapL:0, enL:0, autoL:0, critL:0, regenL:0, energy:100, muted:false, taps:0, sinceOpen:0, nextOpen: 20 + Math.floor(Math.random()*16), lastSeen: Date.now(), friends:0, goldOpens:0, skin:'basic', skins:['basic'], qDay:'', qTap:0, qBuy:0, qOpen:0, qCombo:0, qFood:0, qMix:0, qRecipe:0, qClaim:{}, streak:0, streakDay:'', turboUntil:0, turboDay:'', fillDay:'', foods:[], found:[], plate:[], mixId:'', mixUntil:0, cipherDay:'', cipherDone:0, naborDay:'', naborDone:0, pendingClaim:null, claimCreditSeen:0 };
   var S;
   try { S = Object.assign({}, DEF, JSON.parse(localStorage.getItem(KEY) || '{}')); }
   catch(e){ S = Object.assign({}, DEF); }
@@ -8,6 +8,42 @@
   if (!Array.isArray(S.found)) S.found = [];
   if (!Array.isArray(S.plate)) S.plate = [];
 
+  var CIPHER_WORDS = ['СМЫТЬ','ЗАСОР','СЛИВ','МУХА','БАЧОК','СМРАД','ПЛИТКА','ТУАЛЕТ','КЛОЗЕТ','ДВЕРКА','ВАННА','МЫЛО'];
+  var CIPHER_REWARD = 1000;
+  var NABOR_REWARD = 800;
+  function fnv1a(s){
+    var h = 2166136261;
+    for (var i = 0; i < s.length; i++){
+      h ^= s.charCodeAt(i);
+      h = Math.imul(h, 16777619) >>> 0;
+    }
+    return h >>> 0;
+  }
+  function cipherWord(day){
+    return CIPHER_WORDS[fnv1a('c:' + day) % CIPHER_WORDS.length];
+  }
+  function naborFoods(day){
+    var s = fnv1a('n:' + day);
+    var ids = [];
+    for (var i = 0; i < FOODS.length; i++) ids.push(FOODS[i].id);
+    var out = [];
+    for (var i = 0; i < 3; i++){
+      s = (Math.imul(s, 16777619) + Math.imul(i + 1, 2654435761)) >>> 0;
+      out.push(ids.splice(s % ids.length, 1)[0]);
+    }
+    return out;
+  }
+  function scrambleWord(w, day){
+    var chars = w.split('');
+    var s = fnv1a('s:' + day);
+    for (var i = chars.length - 1; i > 0; i--){
+      s = Math.imul(s, 16777619) >>> 0;
+      var j = s % (i + 1);
+      var t = chars[i]; chars[i] = chars[j]; chars[j] = t;
+    }
+    if (chars.join('') === w && chars.length > 1){ var t0 = chars[0]; chars[0] = chars[1]; chars[1] = t0; }
+    return chars;
+  }
   var FOODS = [
     { id:'milk', name:'Молоко', ico:'🥛', cost:40 },
     { id:'cuke', name:'Огурцы', ico:'🥒', cost:35 },
@@ -23,14 +59,14 @@
     { id:'vodka', name:'Водка', ico:'🥃', cost:160 }
   ];
   var RECIPES = [
-    { id:'village', a:'milk', b:'cuke', name:'Деревенский взрыв', d:'тап ×2 до полуночи', tap:2 },
+    { id:'village', a:'milk', b:'cuke', name:'Деревенский взрыв', d:'тап ×2 до утра', tap:2 },
     { id:'grandpa', a:'herring', b:'milk', name:'Закуска от деда', d:'энергия быстрее', regen:400 },
     { id:'bench', a:'beer', b:'seeds', name:'Лавочка', d:'муха +2/сек', auto:2 },
     { id:'baba', a:'kefir', b:'garlic', name:'Бабушкин курс', d:'+40 к напору', en:40 },
     { id:'dorm', a:'cola', b:'pelmeni', name:'Общага', d:'крит с тапа', crit:0.12 },
     { id:'dacha', a:'vodka', b:'melon', name:'Дачный закат', d:'чаще золотая', gold:0.20 }
   ];
-  var MIX_FAIL = ['Мимо. Какашечка молчит.','Не дружит. Даже муха отвернулась.','Так себе тарелка.','Кишечник сказал нет.','Ничего. Пробуй другую пару.'];
+  var MIX_FAIL = ['Мимо. Какашечка молчит.','Не дружит. Даже муха отвернулась.','Так себе тарелка.','Кишечник сказал нет.','Ничего. Другая пара.'];
   function foodById(id){ for (var i=0;i<FOODS.length;i++) if (FOODS[i].id===id) return FOODS[i]; return null; }
   function hasFood(id){ return (S.foods||[]).indexOf(id) >= 0; }
   function findRecipe(a,b){
@@ -94,9 +130,9 @@
   var UPS = [
     { k:'tapL', cap:100, name:'Фастфуд',       icon:'food', cost:function(l){ return Math.floor(25 * Math.pow(1.6, l)); },  d:function(l){ return '+1 какоин за тап · сейчас <b>' + perTap() + '</b>'; } },
     { k:'enL', cap:50,  name:'Кишечник',      icon:'gut',  cost:function(l){ return Math.floor(50 * Math.pow(1.7, l)); },  d:function(l){ return '+20 к энергии · сейчас <b>' + maxEnergy() + '</b>'; } },
-    { k:'autoL',cap:15, name:'Муха-помощник', icon:'fly',  cost:function(l){ return Math.floor(200 * Math.pow(2, l)); },  d:function(l){ return 'Тапает сама · сейчас <b>' + autoPerSec() + '/сек</b>'; } },
+    { k:'autoL',cap:15, name:'Муха-помощник', icon:'fly',  cost:function(l){ return Math.floor(200 * Math.pow(2, l)); },  d:function(l){ return 'тапает сама · сейчас <b>' + autoPerSec() + '/сек</b>'; } },
     { k:'critL', cap:20, name:'Острое',        icon:'food', cost:function(l){ return Math.floor(80 * Math.pow(1.75, l)); }, d:function(l){ return 'шанс крита ×3 · сейчас <b>' + Math.round((0.05*S.critL)*100) + '%</b>'; } },
-    { k:'regenL',cap:10, name:'Кофе',          icon:'gut',  cost:function(l){ return Math.floor(60 * Math.pow(1.8, l)); },  d:function(l){ return 'энергия быстрее · тик <b>' + regenMs() + 'мс</b>'; } }
+    { k:'regenL',cap:10, name:'Кофе',          icon:'gut',  cost:function(l){ return Math.floor(60 * Math.pow(1.8, l)); },  d:function(l){ return 'энергия наползает быстрее'; } }
   ];
   var ICONS = {
     food:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 3v8a3 3 0 0 0 6 0V3"/><path d="M9 11v10"/><path d="M17 3c-1.5 2-2 4-2 6s.5 3 2 3 2-1 2-3-.5-4-2-6z"/><path d="M17 12v9"/></svg>',
