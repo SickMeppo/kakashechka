@@ -23,18 +23,18 @@
     window.__regenT += 500;
     if (window.__regenT < need) return;
     window.__regenT = 0;
-    if (S.energy < maxEnergy()){ S.energy = Math.min(maxEnergy(), S.energy + 1); render(); }
+    if (S.energy < maxEnergy()){ S.energy = Math.min(maxEnergy(), S.energy + 1); renderFast(); }
     if (S.energy >= 1){ poop.classList.remove('off'); if (poopWrap) poopWrap.classList.remove('empty'); applySkinClass(); }
   }, 500);
   setInterval(function(){
-    if (autoPerSec() > 0){ S.coins += autoPerSec(); bumpCoins(); render(); }
+    if (autoPerSec() > 0){ S.coins += autoPerSec(); bumpCoins(); renderFast(); }
   }, 1000);
   setInterval(saveLocal, 3000);
   setInterval(saveCloud, 20000);
   setInterval(function(){
     var drt = $('#dailyRewardT'); if (drt) drt.textContent = 'авто';
     var tb = $('#boostTurbo');
-    if (tb && (turboOn() || tb.classList.contains('on'))) render();
+    if (tb && (turboOn() || tb.classList.contains('on'))) renderFast();
   }, 1000);
   document.addEventListener('visibilitychange', function(){ if (document.hidden) saveCloud(); });
   window.addEventListener('pagehide', saveCloud);
@@ -255,7 +255,7 @@
   })();
 
   /* test handles */
-  window.__test = { state:S, render:render, tap:tapPoop, save:save, applyRemote:applyRemote, applyServerResponse:handleServerResponse, buyFood:buyFood, mix:mixNow, today:todayUTC, cipherWord:cipherWord, naborFoods:naborFoods, claimCipher:function(w){ return window.__dayClaim.cipher(w); }, claimNabor:function(){ return window.__dayClaim.nabor(); }, openCipher:function(){ window.__dayClaim.openC(); }, openNabor:function(){ window.__dayClaim.openN(); } };
+  window.__test = { state:S, render:render, renderFast:renderFast, tap:tapPoop, save:save, applyRemote:applyRemote, applyServerResponse:handleServerResponse, buyFood:buyFood, mix:mixNow, today:todayUTC, cipherWord:cipherWord, naborFoods:naborFoods, claimCipher:function(w){ return window.__dayClaim.cipher(w); }, claimNabor:function(){ return window.__dayClaim.nabor(); }, openCipher:function(){ window.__dayClaim.openC(); }, openNabor:function(){ window.__dayClaim.openN(); }, evolution:{ stages:EVOLUTION_STAGES, power:evolutionPower, forPower:evolutionForPower, current:currentEvolution } };
   window.__verify = function(){
     var r = [];
     r.push(['монеты ≥ 0', S.coins >= 0, 'coins=' + fmt(S.coins)]);

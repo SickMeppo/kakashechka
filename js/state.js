@@ -106,6 +106,33 @@
     var cut = (activeMix() && activeMix().regen) || 0;
     return Math.max(400, 1500 - 80 * (S.regenL || 0) - cut);
   }
+  var EVOLUTION_STAGES = [
+    { index:0, min:0,   id:'crumb',  name:'Комочек', art:'img/evo-0.webp', line:'только появилась' },
+    { index:1, min:3,   id:'pile',   name:'Кучка', art:'img/evo-1.webp', line:'теперь держит форму' },
+    { index:2, min:12,  id:'heap',   name:'Кучища', art:'img/evo-2.webp', line:'трубы это заметили' },
+    { index:3, min:30,  id:'clog',   name:'Засор', art:'img/evo-3.webp', line:'вода напряглась' },
+    { index:4, min:50,  id:'tank',   name:'Хозяин бачка', art:'img/evo-4.webp', line:'бачок слушается' },
+    { index:5, min:70,  id:'legend', name:'Легенда канализации', art:'img/evo-5.webp', line:'дальше только легенды' }
+  ];
+  function evolutionPower(st){
+    st = st || S || {};
+    return ['tapL','enL','autoL','critL','regenL'].reduce(function(total, key){
+      var value = Number(st[key]);
+      return total + (Number.isFinite(value) && value > 0 ? Math.floor(value) : 0);
+    }, 0);
+  }
+  function evolutionForPower(power){
+    power = Number(power);
+    if (!Number.isFinite(power) || power < 0) power = 0;
+    var stage = EVOLUTION_STAGES[0];
+    for (var i = 1; i < EVOLUTION_STAGES.length; i++){
+      if (power < EVOLUTION_STAGES[i].min) break;
+      stage = EVOLUTION_STAGES[i];
+    }
+    return stage;
+  }
+  function currentEvolution(st){ return evolutionForPower(evolutionPower(st || S)); }
+
   var RANKS = [
     [0, 'Засор'],
     [50, 'Запах в подъезде'],
@@ -143,7 +170,7 @@
   function fmt(n){
     n = Math.floor(n);
     if (n < 1000) return String(n);
-    var units = [[1e9,'B'],[1e6,'M'],[1e3,'K']];
+    var units = [[1e24,'Sp'],[1e21,'Sx'],[1e18,'Qi'],[1e15,'Qa'],[1e12,'T'],[1e9,'B'],[1e6,'M'],[1e3,'K']];
     for (var i=0;i<units.length;i++){
       if (n >= units[i][0]){
         var v = n / units[i][0];

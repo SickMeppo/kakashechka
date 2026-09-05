@@ -1,6 +1,81 @@
 /* ---------- render ---------- */
-  var coinsBox = $('#coinsBox');
-  function render(){
+var coinsBox = $('#coinsBox');
+function levelWord(n){
+  var n10 = n % 10, n100 = n % 100;
+  if (n10 === 1 && n100 !== 11) return 'уровень';
+  if (n10 >= 2 && n10 <= 4 && (n100 < 12 || n100 > 14)) return 'уровня';
+  return 'уровней';
+}
+function announceGame(message){
+  var live = $('#gameLive');
+  if (live) live.textContent = message;
+}
+function setProgressFill(element, percent){
+  if (!element) return;
+  var value = Math.max(0, Math.min(100, Number(percent) || 0)) / 100;
+  element.style.width = '';
+  element.style.transform = 'scaleX(' + value + ')';
+}
+function refreshUpgradeAffordability(){
+  document.querySelectorAll('#upList .buy').forEach(function(button){
+    var upgrade = UPS[Number(button.dataset.i)];
+    if (!upgrade) return;
+    var level = S[upgrade.k] || 0;
+    button.disabled = level >= upgrade.cap || S.coins < upgrade.cost(level);
+  });
+}
+function refreshJobBadge(ready){
+  if (typeof ready !== 'number'){
+    ensureQuests();
+    ready = 0;
+    QUESTS.forEach(function(q){ if (!S.qClaim[q.id] && (S[q.key] || 0) >= q.need) ready++; });
+  }
+  var badge = $('#jobBadge');
+  var tab = document.querySelector('.tab[data-scr="scr-job"]');
+  if (badge){
+    badge.hidden = ready < 1;
+    badge.textContent = String(ready);
+  }
+  if (tab){
+    tab.dataset.ready = ready ? '1' : '0';
+    tab.setAttribute('aria-label', ready ? ('Дело, готово заданий: ' + ready) : 'Дело');
+  }
+}
+function renderEvolution(){
+  var power = evolutionPower(S), stage = evolutionForPower(power);
+  var next = EVOLUTION_STAGES[stage.index + 1] || null;
+  var left = next ? Math.max(0, next.min - power) : 0;
+  var pct = next ? Math.max(0, Math.min(100, (power - stage.min) / (next.min - stage.min) * 100)) : 100;
+  var wrap = $('#poopWrap'), chip = $('#evoChip'), panel = $('#evoPanel');
+  if (wrap) wrap.dataset.evo = String(stage.index);
+  if (chip){
+    chip.setAttribute('aria-label', next
+      ? ('Форма ' + stage.name + '. ' + left + ' ' + levelWord(left) + ' до ' + next.name)
+      : ('Форма ' + stage.name + '. Последняя форма'));
+  }
+  var formN = $('#evoFormN'); if (formN) formN.textContent = (stage.index + 1) + '/' + EVOLUTION_STAGES.length;
+  var name = $('#evoName'); if (name) name.textContent = stage.name;
+  var chipProgress = $('#evoChipProgress'); if (chipProgress) chipProgress.textContent = next ? (power + '/' + next.min + ' ур.') : 'МАКС';
+  var stageLabel = $('#evoStageLabel'); if (stageLabel) stageLabel.textContent = 'ФОРМА ' + (stage.index + 1) + ' ИЗ ' + EVOLUTION_STAGES.length;
+  var panelName = $('#evoPanelName'); if (panelName) panelName.textContent = stage.name;
+  var panelHint = $('#evoPanelHint');
+  if (panelHint) panelHint.textContent = next ? (left + ' ' + levelWord(left) + ' до ' + next.name) : 'последняя форма';
+  var track = $('#evoTrack');
+  if (track){
+    track.setAttribute('aria-valuemin', String(next ? stage.min : 0));
+    track.setAttribute('aria-valuemax', String(next ? next.min : stage.min));
+    track.setAttribute('aria-valuenow', String(next ? power : stage.min));
+    track.setAttribute('aria-valuetext', next
+      ? (stage.name + '. ' + left + ' ' + levelWord(left) + ' до ' + next.name)
+      : (stage.name + '. Последняя форма'));
+  }
+  setProgressFill($('#evoTrackFill'), pct);
+  var thumb = $('#evoThumb'); if (thumb && thumb.getAttribute('src') !== stage.art) thumb.src = stage.art;
+  var btn = poop || $('#poop');
+  if (btn) btn.setAttribute('aria-label', 'Тапнуть по какашечке. Форма: ' + stage.name);
+  if (panel) panel.dataset.evo = String(stage.index);
+}
+function renderFast(){
     $('#coinsVal').textContent = fmt(S.coins);
     $('#perTap').textContent = '+' + fmt(Math.round(perTap() * (turboOn() ? 2 : 1)));
     $('#cps').textContent = fmt(autoPerSec());
@@ -50,7 +125,7 @@
     var max = maxEnergy();
     var pct = Math.max(0, Math.min(100, S.energy / max * 100));
     var fill = $('#energyFill');
-    fill.style.width = pct + '%';
+    setProgressFill(fill, pct);
     fill.className = pct < 22 ? 'low' : '';
     $('#energyTxt').textContent = Math.floor(S.energy) + '/' + max;
     var meter = document.querySelector('.energy');
@@ -60,6 +135,14 @@
       meter.setAttribute('aria-valuetext', Math.floor(S.energy) + ' из ' + max);
     }
 
+    renderEvolution();
+    renderNextGoal();
+    applySkinClass();
+    refreshUpgradeAffordability();
+    refreshJobBadge();
+  }
+  function render(){
+    renderFast();
     var html = '';
     for (var i=0;i<UPS.length;i++){
       var u = UPS[i], l = S[u.k], capped = l >= u.cap;
@@ -80,8 +163,6 @@
     var emp = $('#squadEmpty');
     if (emp) emp.style.display = S.friends > 0 ? 'none' : '';
     renderJobs();
-    renderNextGoal();
-    applySkinClass();
   }
   var QUESTS = [
     { id:'tap', name:'Тапни 80 раз', need:80, key:'qTap', rew:100 },
@@ -118,7 +199,9 @@
     var id = S.skin || 'basic';
     if (btn && btn.classList.contains('off') && id === 'basic') id = 'sleepy';
     var hitting = btn && btn.classList.contains('hit');
-    var src = (hitting && HIT_ART[id]) ? HIT_ART[id] : (SKIN_ART[id] || SKIN_ART.basic);
+    var src = id === 'basic'
+      ? currentEvolution().art
+      : ((hitting && HIT_ART[id]) ? HIT_ART[id] : (SKIN_ART[id] || currentEvolution().art));
     if (art.getAttribute('src') !== src) art.src = src;
     if (wrap) wrap.classList.toggle('empty', !!(btn && btn.classList.contains('off')));
   }
@@ -145,21 +228,16 @@
       var qr = $('#questReady');
       if (qr) qr.textContent = ready ? (ready + ' готово') : 'нет готовых';
     }
-    var jobBadge = $('#jobBadge');
-    if (jobBadge){
-      jobBadge.hidden = ready < 1;
-      jobBadge.textContent = String(ready);
-      var jobTab = jobBadge.closest('.tab');
-      if (jobTab) jobTab.setAttribute('aria-label', ready ? ('Дело, готово заданий: ' + ready) : 'Дело');
-    }
+    refreshJobBadge(ready);
     var sg = $('#skinGrid');
     if (sg){
       var hs = '';
       SKINS.forEach(function(sk){
         var own = S.skins.indexOf(sk.id) >= 0;
         var selected = S.skin === sk.id;
+        var preview = sk.id === 'basic' ? currentEvolution().art : (SKIN_ART[sk.id] || currentEvolution().art);
         hs += '<button class="skin'+(selected?' on':'')+'" data-skin="'+sk.id+'" aria-pressed="'+(selected?'true':'false')+'" '+(own?'':'disabled')+'>'
-          + (own ? '<img src="'+(SKIN_ART[sk.id]||SKIN_ART.basic)+'" alt="" loading="lazy">' : '<span class="skinlock">?</span>')
+          + (own ? '<img src="'+preview+'" alt="" loading="lazy">' : '<span class="skinlock">?</span>')
           + '<span class="skinlab">'+sk.name+'<small>'+(selected?'выбрано':(own?'Выбрать':sk.how))+'</small></span></button>';
       });
       sg.innerHTML = hs;
@@ -234,7 +312,7 @@
       var left = Math.max(1, Math.ceil((regenMs() - (window.__regenT || 0)) / 1000));
       label.textContent = fillReady ? 'Кишечник пуст' : ('1 энергия через ' + left + ' с');
       value.textContent = fillReady ? 'Напор вернёт ' + max : 'потом можно тапать';
-      bar.style.width = '0%';
+      setProgressFill(bar, 0);
       action.textContent = fillReady ? 'Показать Напор' : 'Подожди';
       action.dataset.action = fillReady ? 'focus-fill' : 'wait';
       action.disabled = !fillReady;
@@ -244,9 +322,22 @@
     if (q){
       label.textContent = 'Задание готово';
       value.textContent = q.name + ' · +' + q.rew;
-      bar.style.width = '100%';
+      setProgressFill(bar, 100);
       action.textContent = 'Забрать';
       action.dataset.action = 'job';
+      action.disabled = false;
+      return;
+    }
+    var stage = currentEvolution(), power = evolutionPower(S);
+    var nextStage = EVOLUTION_STAGES[stage.index + 1] || null;
+    var stageProgress = nextStage ? (power - stage.min) / (nextStage.min - stage.min) : 0;
+    if (nextStage && (stageProgress >= .7 || nextStage.min - power === 1)){
+      var levelsLeft = Math.max(0, nextStage.min - power);
+      label.textContent = 'До новой формы — ' + levelsLeft + ' ' + levelWord(levelsLeft);
+      value.textContent = nextStage.name + ' · ' + power + ' из ' + nextStage.min;
+      setProgressFill(bar, stageProgress * 100);
+      action.textContent = 'Прокачка';
+      action.dataset.action = 'up';
       action.disabled = false;
       return;
     }
@@ -260,7 +351,7 @@
     if (!best){
       label.textContent = 'Всё прокачано';
       value.textContent = 'какашечка легендарна';
-      bar.style.width = '100%';
+      setProgressFill(bar, 100);
       action.textContent = 'Прокачка';
       action.dataset.action = 'up';
       action.disabled = false;
@@ -268,7 +359,7 @@
     }
     label.textContent = best.miss ? ('Ещё ' + fmt(best.miss) + ' до ' + best.u.name) : (best.u.name + ' доступен');
     value.textContent = fmt(Math.min(S.coins, best.cost)) + ' из ' + fmt(best.cost);
-    bar.style.width = Math.max(0, Math.min(100, S.coins / best.cost * 100)) + '%';
+    setProgressFill(bar, S.coins / best.cost * 100);
     action.textContent = best.miss ? 'Прокачка' : 'Прокачать';
     action.dataset.action = 'up';
     action.disabled = false;
@@ -279,11 +370,16 @@
 
   /* ---------- fx ---------- */
   var fx = $('#fx');
+  var FX_LIMIT = 48;
+  function appendFx(element){
+    fx.appendChild(element);
+    while (fx.children.length > FX_LIMIT) fx.firstChild.remove();
+  }
   function flyText(x, y, txt){
     var el = document.createElement('div');
     el.className = 'fly'; el.textContent = txt;
     el.style.left = (x - 14) + 'px'; el.style.top = (y - 20) + 'px';
-    fx.appendChild(el);
+    appendFx(el);
     setTimeout(function(){ el.remove(); }, 800);
     return el;
   }
@@ -294,16 +390,15 @@
       el.style.left = x + 'px'; el.style.top = y + 'px';
       el.style.setProperty('--dx', (Math.random()*130 - 65) + 'px');
       el.style.setProperty('--dy', (-60 - Math.random()*85) + 'px');
-      fx.appendChild(el);
+      appendFx(el);
       (function(el){ setTimeout(function(){ el.remove(); }, 700); })(el);
     }
-    while (fx.children.length > 60) fx.firstChild.remove();
   }
   function shockwave(x, y){
     var el = document.createElement('div');
     el.className = 'wave';
     el.style.left = x + 'px'; el.style.top = y + 'px';
-    fx.appendChild(el);
+    appendFx(el);
     setTimeout(function(){ el.remove(); }, 500);
   }
   function sparkBurst(x, y, n){
@@ -314,7 +409,7 @@
       el.style.left = x + 'px'; el.style.top = y + 'px';
       el.style.setProperty('--dx', Math.cos(a)*d + 'px');
       el.style.setProperty('--dy', Math.sin(a)*d + 'px');
-      fx.appendChild(el);
+      appendFx(el);
       (function(el){ setTimeout(function(){ el.remove(); }, 600); })(el);
     }
   }
@@ -325,7 +420,7 @@
       el.style.left = x + 'px'; el.style.top = y + 'px';
       el.style.setProperty('--dx', (Math.random()*90 - 45) + 'px');
       el.style.setProperty('--dy', (18 + Math.random()*72) + 'px');
-      fx.appendChild(el);
+      appendFx(el);
       (function(el){ setTimeout(function(){ el.remove(); }, 750); })(el);
     }
   }
@@ -337,7 +432,7 @@
       el.style.left = x + 'px'; el.style.top = y + 'px';
       el.style.setProperty('--dx', Math.cos(a)*d + 'px');
       el.style.setProperty('--dy', Math.sin(a)*d + 'px');
-      fx.appendChild(el);
+      appendFx(el);
       (function(el){ setTimeout(function(){ el.remove(); }, 650); })(el);
     }
   }

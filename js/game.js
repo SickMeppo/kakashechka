@@ -1,8 +1,19 @@
 /* ---------- tapping ---------- */
   var poop = $('#poop'), hint = $('#hint'), comboBadge = $('#comboBadge'), poopWrap = $('#poopWrap');
-  var streak = 0, lastTap = 0, hintTimer = null, comboTimer = null, hitTimer = null;
+  var streak = 0, comboTier = 0, lastTap = 0, hintTimer = null, comboTimer = null, tierTimer = null, hitTimer = null, pressedAt = 0;
 
   function appRect(){ return document.getElementById('app').getBoundingClientRect(); }
+  function motionReduced(){ return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); }
+  function squashNow(e){
+    if (Math.floor(S.energy) < 1 || motionReduced()) return false;
+    pressedAt = (window.performance && performance.now) ? performance.now() : Date.now();
+    poop.style.setProperty('--tilt', (Math.random() * 6 - 3).toFixed(2) + 'deg');
+    poop.classList.remove('hit','off'); void poop.offsetWidth; poop.classList.add('hit');
+    clearTimeout(hitTimer);
+    hitTimer = setTimeout(function(){ poop.classList.remove('hit'); applySkinClass(); }, 270);
+    applySkinClass();
+    return true;
+  }
 
   function tapPoop(e){
     if (Math.floor(S.energy) < 1){
@@ -20,13 +31,26 @@
     streak = (now - lastTap < 600) ? streak + 1 : 1;
     lastTap = now;
     var mult = streak >= 25 ? 2 : streak >= 10 ? 1.5 : 1;
+    var nextTier = streak >= 25 ? 2 : streak >= 10 ? 1 : 0;
+    var tierUp = nextTier > comboTier;
     if (streak >= 10){
       comboBadge.textContent = 'КОМБО ×' + mult;
       comboBadge.classList.add('on');
     }
+    if (tierUp){
+      poopWrap.classList.remove('tierup'); void poopWrap.offsetWidth; poopWrap.classList.add('tierup');
+      clearTimeout(tierTimer);
+      tierTimer = setTimeout(function(){ poopWrap.classList.remove('tierup'); }, 980);
+      announceGame('Комбо ×' + mult);
+    }
+    comboTier = nextTier;
     poopWrap.classList.toggle('hot', mult > 1);
     clearTimeout(comboTimer);
-    comboTimer = setTimeout(function(){ poopWrap.classList.remove('hot'); comboBadge.classList.remove('on'); }, 700);
+    comboTimer = setTimeout(function(){
+      comboTier = 0;
+      poopWrap.classList.remove('hot','tierup');
+      comboBadge.classList.remove('on');
+    }, 700);
 
     var critP = (0.05 * (S.critL || 0)) + ((activeMix() && activeMix().crit) || 0);
     var crit = Math.random() < critP;
@@ -35,15 +59,11 @@
     S.qTap = (S.qTap || 0) + 1;
     if (streak >= 10) S.qCombo = 1;
 
-    var reduceFx = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (!reduceFx){
-      poop.style.setProperty('--tilt', (Math.random() * 6 - 3).toFixed(2) + 'deg');
-      poop.classList.remove('hit','off'); void poop.offsetWidth; poop.classList.add('hit');
-      clearTimeout(hitTimer);
-      hitTimer = setTimeout(function(){ poop.classList.remove('hit'); applySkinClass(); }, 300);
-    }
-    applySkinClass();
-    snd.squish(); haptic(crit ? 'medium' : (mult > 1 ? 'medium' : 'light'));
+    var reduceFx = motionReduced();
+    var clock = (window.performance && performance.now) ? performance.now() : Date.now();
+    var pressedRecently = e && e.type === 'click' && clock - pressedAt < 400;
+    if (!pressedRecently) squashNow(e);
+    snd.squish(); haptic(crit || tierUp ? 'medium' : 'light');
 
     if (!reduceFx){
       var r = appRect(), bx = poop.getBoundingClientRect();
@@ -62,11 +82,15 @@
         poopWrap.classList.remove('crit'); void poopWrap.offsetWidth; poopWrap.classList.add('crit');
       }
     }
-    bumpCoins(); render(); saveLocal();
+    bumpCoins(); renderFast(); saveLocal();
 
     if (S.sinceOpen >= S.nextOpen) doOpen();
   }
 
+  poop.addEventListener('pointerdown', function(e){
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    squashNow(e);
+  });
   poop.addEventListener('click', tapPoop);
   poop.addEventListener('keydown', function(e){
     if ((e.key !== 'Enter' && e.key !== ' ') || e.repeat) return;
@@ -76,15 +100,42 @@
   poop.addEventListener('contextmenu', function(e){ e.preventDefault(); });
 
   /* ---------- poop grown ---------- */
-  var overlay = $('#openOverlay');
+  var overlay = $('#openOverlay'), evolveTimer = null;
   function closeReward(){
     if (!overlay.classList.contains('show')) return;
-    overlay.classList.remove('show','gold');
+    var wasEvolution = overlay.classList.contains('evolution');
+    overlay.classList.remove('show','gold','evolution');
     overlay.setAttribute('aria-hidden', 'true');
     syncChromeInert();
-    poop.classList.remove('spawn'); void poop.offsetWidth; poop.classList.add('spawn');
+    if (wasEvolution){
+      showScreen('scr-tap', null, true);
+      clearTimeout(evolveTimer);
+      poopWrap.classList.remove('evolved'); void poopWrap.offsetWidth; poopWrap.classList.add('evolved');
+      evolveTimer = setTimeout(function(){ poopWrap.classList.remove('evolved'); }, 900);
+    } else {
+      poop.classList.remove('spawn'); void poop.offsetWidth; poop.classList.add('spawn');
+    }
     poop.focus({ preventScroll:true });
     haptic('success'); render(); saveCloud();
+  }
+  function showEvolution(stage){
+    if (!stage) return;
+    overlay.classList.remove('show','gold');
+    overlay.classList.add('evolution');
+    var oa = $('#openArt'); if (oa) oa.src = stage.art;
+    $('#openTag').textContent = 'НОВАЯ ФОРМА';
+    $('#openRew').textContent = stage.name;
+    $('#openSub').textContent = stage.line;
+    var btn = $('#collectBtn');
+    btn.textContent = 'Смотреть';
+    btn.onclick = closeReward;
+    void overlay.offsetWidth;
+    overlay.classList.add('show');
+    overlay.setAttribute('aria-hidden', 'false');
+    syncChromeInert();
+    btn.focus({ preventScroll:true });
+    announceGame('Новая форма: ' + stage.name);
+    snd.open(); haptic('medium');
   }
   function doOpen(){
     S.sinceOpen = 0;
@@ -97,12 +148,18 @@
     bumpCoins();
     render();
     saveLocal();
+    overlay.classList.remove('evolution');
     overlay.classList.toggle('gold', golden);
-    var oa = $('#openArt'); if (oa) oa.src = golden ? SKIN_ART.gold : SKIN_ART.basic;
+    var oa = $('#openArt');
+    var currentArt = (S.skin || 'basic') === 'basic'
+      ? currentEvolution().art
+      : (SKIN_ART[S.skin] || currentEvolution().art);
+    if (oa) oa.src = golden ? SKIN_ART.gold : currentArt;
     $('#openTag').textContent = golden ? 'ЗОЛОТАЯ КАКАШЕЧКА ×10' : 'КАКАШЕЧКА ВЫРОСЛА';
     $('#openRew').textContent = '+' + fmt(reward);
     $('#openSub').textContent = golden ? 'золотая. сразу ×10' : 'ещё вырастет';
     var btn = $('#collectBtn');
+    btn.textContent = 'Продолжить';
     btn.onclick = closeReward;
     overlay.classList.remove('show'); void overlay.offsetWidth;
     overlay.classList.add('show');
@@ -118,10 +175,22 @@
     var b = e.target.closest('.buy'); if (!b || b.disabled) return;
     var u = UPS[+b.dataset.i], l = S[u.k], c = u.cost(l);
     if (l >= u.cap || S.coins < c) return;
+    var beforeEvolution = currentEvolution();
     S.coins -= c; S[u.k] = l + 1;
     S.qBuy = (S.qBuy || 0) + 1;
     if (u.k === 'enL') S.energy = Math.min(S.energy + 20, maxEnergy());
+    var afterEvolution = currentEvolution();
     snd.buy(); haptic('success'); bumpCoins(); render(); saveCloud();
+    var freshButton = document.querySelector('.buy[data-i="' + b.dataset.i + '"]');
+    var freshRow = freshButton && freshButton.closest('.uprow');
+    if (freshButton) freshButton.classList.add('bought');
+    if (freshRow) freshRow.classList.add('bought');
+    setTimeout(function(){
+      if (freshButton) freshButton.classList.remove('bought');
+      if (freshRow) freshRow.classList.remove('bought');
+    }, 440);
+    if (afterEvolution.index > beforeEvolution.index) showEvolution(afterEvolution);
+    else announceGame('Куплено: ' + u.name + ', уровень ' + (l + 1));
   });
 
   document.getElementById('questList').addEventListener('click', function(e){
@@ -542,6 +611,7 @@
 
   /* ---------- tabs ---------- */
   function showScreen(id, focusSelector, keepCurrentFocus){
+    render();
     var app = $('#app');
     if (app) app.dataset.screen = id;
     document.querySelectorAll('.tab').forEach(function(x){

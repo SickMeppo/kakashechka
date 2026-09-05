@@ -53,6 +53,11 @@
           <i class="wisp a"></i><i class="wisp b"></i><i class="wisp c"></i>
           <b class="zz">z</b><b class="zz z2">z</b><b class="zz z3">Z</b>
         </div>
+        <div class="evochip" id="evoChip">
+          <span>ФОРМА <b id="evoFormN">1/6</b></span>
+          <strong id="evoName">Комочек</strong>
+          <small id="evoChipProgress">0/3</small>
+        </div>
         <div class="bowl" aria-hidden="true">
           <svg viewBox="0 0 260 90">
             <ellipse cx="130" cy="58" rx="118" ry="26" fill="#1a1008"/>
@@ -65,7 +70,7 @@
         </div>
         <div class="comboring"></div>
         <button id="poop" aria-label="Тапнуть по какашечке">
-          <img id="poopArt" src="img/basic.webp" alt="">
+          <img id="poopArt" src="img/evo-0.webp" alt="">
         </button>
       </div>
       <div class="hint" id="hint">Тапай по какашечке</div>
@@ -107,6 +112,17 @@
       <div class="scr-pad">
         <h2 class="scr-title" id="upHeading" tabindex="-1">Прокачка</h2>
         <div class="scr-sub">жратва, кишечник, муха</div>
+        <section class="evo-panel" id="evoPanel" aria-labelledby="evoPanelName">
+          <img id="evoThumb" src="img/evo-0.webp" alt="">
+          <div class="evo-copy">
+            <span id="evoStageLabel">ФОРМА 1 ИЗ 6</span>
+            <strong id="evoPanelName">Комочек</strong>
+            <small id="evoPanelHint">3 уровня до Кучки</small>
+          </div>
+          <div class="evo-track" id="evoTrack" role="progressbar" aria-label="Рост формы" aria-valuemin="0" aria-valuemax="3" aria-valuenow="0" aria-valuetext="Комочек. 3 уровня до Кучки">
+            <i id="evoTrackFill"></i>
+          </div>
+        </section>
         <div id="upList"></div>
         <h3 class="scr-title section-title">Коллекция</h3>
         <div class="scr-sub">выбери морду</div>
@@ -195,7 +211,7 @@
   <div class="opencard">
     <div class="rays"></div>
     <div class="openpoop">
-      <img id="openArt" class="rise" src="img/basic.webp" alt="">
+      <img id="openArt" class="rise" alt="" src="img/evo-0.webp">
     </div>
     <div class="opentag" id="openTag">КАКАШЕЧКА ВЫРОСЛА</div>
     <div class="openrew" id="openRew">+0</div>
@@ -204,6 +220,7 @@
   </div>
 </div>
 
+<div id="gameLive" class="visually-hidden" role="status" aria-live="polite" aria-atomic="true"></div>
 <div id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 <div id="dayOverlay" role="dialog" aria-modal="true" aria-labelledby="dayTag" aria-describedby="daySub" aria-hidden="true">
   <div class="daycard">
